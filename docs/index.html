@@ -14,6 +14,15 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
+    <!-- Analytics (Google Analytics 4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-XXXXXXXXXX');
+    </script>
+    
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -28,12 +37,13 @@
                 <ul class="nav-links">
                     <li><a href="#features">Features</a></li>
                     <li><a href="#how-it-works">How It Works</a></li>
-                    <li><a href="#examples">Examples</a></li>
+                    <li><a href="#demo">Demo</a></li>
+                    <li><a href="#faq">FAQ</a></li>
                     <li><a href="#roadmap">Roadmap</a></li>
                 </ul>
-                <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary">
-                    <i data-lucide="send"></i>
-                    <span>Open Bot</span>
+                <a href="https://whop.com/joined/oddsify-shop/products/monthly-access-e0/" class="btn btn-primary" target="_blank">
+                    <i data-lucide="lock"></i>
+                    <span>Get Access</span>
                 </a>
                 <button class="mobile-menu-btn" aria-label="Toggle menu">
                     <i data-lucide="menu"></i>
@@ -47,18 +57,18 @@
         <div class="container">
             <div class="hero-badge">
                 <i data-lucide="zap"></i>
-                <span>Instant Results</span>
+                <span>Exclusive to Testudo Legio Members</span>
             </div>
             <h1>Did Your Bet Hit?</h1>
-            <p class="hero-subtitle">Check your sports bet results in seconds. No apps. No logins. Just type a team and date on Telegram.</p>
+            <p class="hero-subtitle">Instant sports bet results on Telegram. Exclusive tool for serious bettors. Join Testudo Legio to get access.</p>
             <div class="hero-cta">
-                <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary btn-large">
-                    <i data-lucide="send"></i>
-                    <span>Add to Telegram — Free</span>
+                <a href="https://whop.com/joined/oddsify-shop/products/monthly-access-e0/" class="btn btn-primary btn-large" target="_blank">
+                    <i data-lucide="lock"></i>
+                    <span>Get Access — Join Testudo Legio</span>
                 </a>
-                <a href="#how-it-works" class="btn btn-secondary btn-large">
-                    <i data-lucide="arrow-down"></i>
-                    <span>Learn More</span>
+                <a href="#demo" class="btn btn-secondary btn-large">
+                    <i data-lucide="play"></i>
+                    <span>See Demo</span>
                 </a>
             </div>
             <div class="hero-stats">
@@ -76,13 +86,22 @@
                     <span class="stat-number">24/7</span>
                     <span class="stat-label">Always Online</span>
                 </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number">NBA</span>
+                    <span class="stat-label">Supported</span>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Demo Section -->
-    <section class="demo">
+    <section id="demo" class="demo">
         <div class="container">
+            <div class="section-header">
+                <h2>See It In Action</h2>
+                <p>Type a team and date. Get instant results.</p>
+            </div>
             <div class="demo-card">
                 <div class="demo-header">
                     <div class="demo-dots">
@@ -111,7 +130,32 @@
                             </div>
                         </div>
                     </div>
+                    <div class="message user">
+                        <div class="message-bubble">
+                            <p>GSW 04-30-2026</p>
+                        </div>
+                    </div>
+                    <div class="message bot">
+                        <div class="message-bubble">
+                            <div class="result-header">
+                                <i data-lucide="circle-x" class="result-icon loss"></i>
+                                <span class="result-title">Golden State Warriors</span>
+                            </div>
+                            <div class="result-score">GSW 105 - 110 DEN</div>
+                            <div class="result-status">
+                                <span class="badge error">LOSS</span>
+                                <span class="result-date">April 30, 2026</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+            </div>
+            <div class="demo-cta">
+                <p>Want to use this tool?</p>
+                <a href="https://whop.com/joined/oddsify-shop/products/monthly-access-e0/" class="btn btn-primary" target="_blank">
+                    <i data-lucide="lock"></i>
+                    <span>Get Access Now</span>
+                </a>
             </div>
         </div>
     </section>
@@ -161,10 +205,10 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">
-                        <i data-lucide="lock"></i>
+                        <i data-lucide="users"></i>
                     </div>
-                    <h3>Privacy First</h3>
-                    <p>No account required. No data stored. Your bet checks are ephemeral and private.</p>
+                    <h3>Members Only</h3>
+                    <p>Exclusive to Testudo Legio members. Join a community of disciplined, CLV-focused bettors.</p>
                 </div>
             </div>
         </div>
@@ -180,12 +224,12 @@
             <div class="steps">
                 <div class="step">
                     <div class="step-icon">
-                        <i data-lucide="user-plus"></i>
+                        <i data-lucide="lock"></i>
                     </div>
                     <div class="step-number">01</div>
                     <div class="step-content">
-                        <h3>Add the Bot</h3>
-                        <p>Click the button below or search <code>@AlexBETCheckerBot</code> in Telegram. Hit Start to begin.</p>
+                        <h3>Get Access</h3>
+                        <p>Join Testudo Legio via Whop. You'll get instant access to the bot and the entire community.</p>
                     </div>
                 </div>
                 <div class="step">
@@ -210,63 +254,93 @@
                 </div>
             </div>
             <div class="cta-center">
-                <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary">
-                    <i data-lucide="send"></i>
-                    <span>Try It Now</span>
+                <a href="https://whop.com/joined/oddsify-shop/products/monthly-access-e0/" class="btn btn-primary btn-large" target="_blank">
+                    <i data-lucide="lock"></i>
+                    <span>Join Testudo Legio</span>
                 </a>
             </div>
         </div>
     </section>
 
-    <!-- Examples Section -->
-    <section id="examples" class="examples">
+    <!-- FAQ Section -->
+    <section id="faq" class="faq">
         <div class="container">
             <div class="section-header">
-                <h2>Supported Input Formats</h2>
-                <p>AlexBET Checker recognizes team names, nicknames, abbreviations, and multiple date formats.</p>
+                <h2>Frequently Asked Questions</h2>
+                <p>Everything you need to know about AlexBET Checker.</p>
             </div>
-            <div class="examples-grid">
-                <div class="example-card">
-                    <div class="example-label">
-                        <i data-lucide="tag"></i>
-                        <span>Full Team Name</span>
+            <div class="faq-grid">
+                <div class="faq-card">
+                    <div class="faq-question">
+                        <i data-lucide="chevron-down"></i>
+                        <h4>How do I get access to the bot?</h4>
                     </div>
-                    <code>New York Knicks 4/30/2026</code>
+                    <div class="faq-answer">
+                        <p>AlexBET Checker is exclusive to Testudo Legio members. Join via Whop and you'll get instant access to the bot along with all other community benefits.</p>
+                    </div>
                 </div>
-                <div class="example-card">
-                    <div class="example-label">
-                        <i data-lucide="tag"></i>
-                        <span>Nickname</span>
+                <div class="faq-card">
+                    <div class="faq-question">
+                        <i data-lucide="chevron-down"></i>
+                        <h4>What sports are supported?</h4>
                     </div>
-                    <code>Lakers 5/1/2026</code>
+                    <div class="faq-answer">
+                        <p>Currently NBA only. NFL, MLB, NHL, and soccer support is in development and coming soon to members.</p>
+                    </div>
                 </div>
-                <div class="example-card">
-                    <div class="example-label">
-                        <i data-lucide="tag"></i>
-                        <span>Abbreviation</span>
+                <div class="faq-card">
+                    <div class="faq-question">
+                        <i data-lucide="chevron-down"></i>
+                        <h4>Does it check spreads and totals?</h4>
                     </div>
-                    <code>GSW 04-30-2026</code>
+                    <div class="faq-answer">
+                        <p>Right now, AlexBET Checker supports moneyline results only. Spread and over/under checking is in active development.</p>
+                    </div>
                 </div>
-                <div class="example-card">
-                    <div class="example-label">
-                        <i data-lucide="tag"></i>
-                        <span>Short Name</span>
+                <div class="faq-card">
+                    <div class="faq-question">
+                        <i data-lucide="chevron-down"></i>
+                        <h4>What formats does it accept?</h4>
                     </div>
-                    <code>nyk 4/30/2026</code>
+                    <div class="faq-answer">
+                        <p>Multiple formats: <code>Lakers 4/30/2026</code>, <code>GSW 04-30-2026</code>, <code>nyk 4/30/2026</code>, <code>Golden State 2026-04-30</code>. Team aliases, abbreviations, and various date formats all work.</p>
+                    </div>
                 </div>
-                <div class="example-card">
-                    <div class="example-label">
-                        <i data-lucide="tag"></i>
-                        <span>ISO Date</span>
+                <div class="faq-card">
+                    <div class="faq-question">
+                        <i data-lucide="chevron-down"></i>
+                        <h4>Is my data stored?</h4>
                     </div>
-                    <code>Golden State 2026-04-30</code>
+                    <div class="faq-answer">
+                        <p>No. Your bet checks are ephemeral and private. We don't store your queries or link them to your Telegram account.</p>
+                    </div>
                 </div>
-                <div class="example-card">
-                    <div class="example-label">
-                        <i data-lucide="tag"></i>
-                        <span>City Only</span>
+                <div class="faq-card">
+                    <div class="faq-question">
+                        <i data-lucide="chevron-down"></i>
+                        <h4>What if the game is in progress?</h4>
                     </div>
-                    <code>Boston 4/29/2026</code>
+                    <div class="faq-answer">
+                        <p>The bot will show "In Progress" status with the current score. Check back after the game ends for the final result.</p>
+                    </div>
+                </div>
+                <div class="faq-card">
+                    <div class="faq-question">
+                        <i data-lucide="chevron-down"></i>
+                        <h4>Can I use this on desktop?</h4>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes! Telegram works on iOS, Android, desktop (Windows, Mac, Linux), and web. The bot works everywhere Telegram does.</p>
+                    </div>
+                </div>
+                <div class="faq-card">
+                    <div class="faq-question">
+                        <i data-lucide="chevron-down"></i>
+                        <h4>What else do I get with Testudo Legio?</h4>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Besides AlexBET Checker, you get access to: daily edge alerts, CLV tracking community, weekly group calls, mentorship from Centurions, The Turtle Doctrine book, and a community of disciplined bettors.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -342,24 +416,32 @@
     <section class="cta">
         <div class="container">
             <div class="cta-content">
-                <h2>Ready to Check Your Bets?</h2>
-                <p>Add AlexBET Checker to Telegram and get instant results. Free forever.</p>
-                <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary btn-large">
-                    <i data-lucide="send"></i>
-                    <span>Add to Telegram</span>
+                <div class="cta-badge">
+                    <i data-lucide="lock"></i>
+                    <span>Members Only</span>
+                </div>
+                <h2>Ready to Get Access?</h2>
+                <p>Join Testudo Legio and unlock AlexBET Checker plus the entire community of disciplined bettors.</p>
+                <a href="https://whop.com/joined/oddsify-shop/products/monthly-access-e0/" class="btn btn-primary btn-large" target="_blank">
+                    <i data-lucide="lock"></i>
+                    <span>Get Access on Whop</span>
                 </a>
                 <div class="cta-features">
                     <div class="cta-feature">
                         <i data-lucide="check"></i>
-                        <span>Free</span>
+                        <span>AlexBET Checker</span>
                     </div>
                     <div class="cta-feature">
                         <i data-lucide="check"></i>
-                        <span>No signup</span>
+                        <span>Daily Edge Alerts</span>
                     </div>
                     <div class="cta-feature">
                         <i data-lucide="check"></i>
-                        <span>All devices</span>
+                        <span>CLV Community</span>
+                    </div>
+                    <div class="cta-feature">
+                        <i data-lucide="check"></i>
+                        <span>Weekly Calls</span>
                     </div>
                 </div>
             </div>
@@ -382,6 +464,10 @@
                         <i data-lucide="github"></i>
                         <span>GitHub</span>
                     </a>
+                    <a href="https://whop.com/joined/oddsify-shop/products/monthly-access-e0/" target="_blank">
+                        <i data-lucide="lock"></i>
+                        <span>Get Access</span>
+                    </a>
                     <a href="https://www.oddsifylabs.com" target="_blank">
                         <i data-lucide="globe"></i>
                         <span>Oddsify Labs</span>
@@ -394,6 +480,7 @@
             </div>
             <div class="footer-bottom">
                 <p>&copy; 2026 Oddsify Labs. All rights reserved.</p>
+                <p class="footer-disclaimer">AlexBET Checker is exclusive to Testudo Legio members. Access requires active subscription.</p>
             </div>
         </div>
     </footer>

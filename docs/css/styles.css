@@ -144,7 +144,8 @@ code {
     transition: color var(--transition-fast);
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links a.active {
     color: var(--text-primary);
 }
 
@@ -170,6 +171,7 @@ code {
     transition: all var(--transition-base);
     border: none;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .btn i {
@@ -269,7 +271,7 @@ code {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    max-width: 600px;
+    max-width: 700px;
     margin: 0 auto;
 }
 
@@ -302,7 +304,7 @@ code {
 
 /* Demo Section */
 .demo {
-    padding: 0 0 80px;
+    padding: var(--section-padding) 0 80px;
 }
 
 .demo-card {
@@ -450,6 +452,16 @@ code {
     color: var(--text-tertiary);
 }
 
+.demo-cta {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.demo-cta p {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
 /* Section Headers */
 .section-header {
     text-align: center;
@@ -591,54 +603,74 @@ code {
     text-align: center;
 }
 
-/* Examples Section */
-.examples {
+/* FAQ Section */
+.faq {
     padding: var(--section-padding) 0;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
 }
 
-.examples-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+.faq-grid {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
 }
 
-.example-card {
+.faq-card {
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
-    padding: 24px;
     border-radius: 12px;
+    overflow: hidden;
     transition: all var(--transition-base);
 }
 
-.example-card:hover {
+.faq-card:hover {
     border-color: var(--border-light);
-    transform: translateY(-2px);
 }
 
-.example-label {
+.faq-question {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
+    gap: 16px;
+    padding: 24px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.faq-question i {
+    width: 20px;
+    height: 20px;
     color: var(--text-tertiary);
-    margin-bottom: 12px;
+    transition: transform var(--transition-base);
+    flex-shrink: 0;
 }
 
-.example-label i {
-    width: 14px;
-    height: 14px;
-}
-
-.example-card code {
-    display: block;
-    padding: 12px 16px;
-    background: var(--bg-tertiary);
-    border-radius: 8px;
-    font-size: 0.9rem;
+.faq-question h4 {
+    flex: 1;
     color: var(--text-primary);
-    border: 1px solid var(--border-color);
+    font-size: 1.05rem;
+    font-weight: 500;
+}
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--transition-base);
+}
+
+.faq-answer p {
+    padding: 0 24px 24px 56px;
+    line-height: 1.7;
+}
+
+.faq-card.active .faq-question i {
+    transform: rotate(180deg);
+}
+
+.faq-card.active .faq-answer {
+    max-height: 200px;
 }
 
 /* Roadmap Section */
@@ -726,6 +758,26 @@ code {
     margin: 0 auto;
 }
 
+.cta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+.cta-badge i {
+    width: 16px;
+    height: 16px;
+    color: var(--accent-warning);
+}
+
 .cta h2 {
     margin-bottom: 16px;
 }
@@ -740,6 +792,7 @@ code {
     gap: 32px;
     justify-content: center;
     margin-top: 32px;
+    flex-wrap: wrap;
 }
 
 .cta-feature {
@@ -790,6 +843,7 @@ code {
 .footer-links {
     display: flex;
     gap: 24px;
+    flex-wrap: wrap;
 }
 
 .footer-links a {
@@ -819,6 +873,11 @@ code {
 .footer-bottom p {
     font-size: 0.85rem;
     color: var(--text-tertiary);
+}
+
+.footer-disclaimer {
+    margin-top: 8px;
+    font-size: 0.8rem;
 }
 
 /* Responsive */
@@ -852,7 +911,7 @@ code {
     }
     
     .features-grid,
-    .examples-grid {
+    .faq-grid {
         grid-template-columns: 1fr;
     }
     
@@ -871,10 +930,10 @@ code {
     .footer-links {
         flex-direction: column;
         gap: 16px;
+        align-items: center;
     }
     
     .cta-features {
-        flex-direction: column;
         gap: 16px;
     }
 }

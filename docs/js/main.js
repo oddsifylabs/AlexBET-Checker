@@ -52,26 +52,69 @@ const observer = new IntersectionObserver((entries) => {
 }, observerOptions);
 
 // Observe elements for animation
-document.querySelectorAll('.feature-card, .step, .example-card, .roadmap-item').forEach(el => {
+document.querySelectorAll('.feature-card, .step, .example-card, .roadmap-item, .faq-card').forEach(el => {
     el.style.opacity = '0';
     el.style.transform = 'translateY(20px)';
     el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
     observer.observe(el);
 });
 
-// Track CTA clicks
-document.querySelectorAll('[href*="t.me/AlexBETCheckerBot"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-        console.log('CTA clicked: Add to Telegram');
-        // Add analytics: gtag('event', 'cta_click', {...})
+// FAQ Accordion
+document.querySelectorAll('.faq-question').forEach(question => {
+    question.addEventListener('click', () => {
+        const card = question.parentElement;
+        const isActive = card.classList.contains('active');
+        
+        // Close all FAQs
+        document.querySelectorAll('.faq-card').forEach(c => {
+            c.classList.remove('active');
+        });
+        
+        // Open clicked FAQ if it wasn't already open
+        if (!isActive) {
+            card.classList.add('active');
+        }
     });
 });
+
+// Track CTA clicks (Analytics)
+document.querySelectorAll('[href*="whop.com"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        // Google Analytics event
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'cta_click', {
+                'event_category': 'conversion',
+                'event_label': 'Whop Sales Page',
+                'value': 1
+            });
+        }
+        console.log('CTA clicked: Whop Sales Page');
+    });
+});
+
+// Track demo views
+const demoSection = document.querySelector('.demo');
+if (demoSection) {
+    const demoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && typeof gtag !== 'undefined') {
+                gtag('event', 'demo_view', {
+                    'event_category': 'engagement',
+                    'event_label': 'Demo Section Viewed'
+                });
+                demoObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.5 });
+    
+    demoObserver.observe(demoSection);
+}
 
 // Mobile menu toggle
 const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
 const navLinks = document.querySelector('.nav-links');
 
-if (mobileMenuBtn) {
+if (mobileMenuBtn && navLinks) {
     mobileMenuBtn.addEventListener('click', () => {
         navLinks.classList.toggle('active');
         mobileMenuBtn.classList.toggle('active');
@@ -97,3 +140,29 @@ window.addEventListener('scroll', () => {
         }
     });
 });
+
+// Add mobile menu styles dynamically
+const style = document.createElement('style');
+style.textContent = `
+    @media (max-width: 768px) {
+        .nav-links.active {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 10, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            gap: 16px;
+        }
+        
+        .mobile-menu-btn.active i {
+            transform: rotate(90deg);
+            transition: transform 0.3s ease;
+        }
+    }
+`;
+document.head.appendChild(style);

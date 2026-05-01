@@ -1,89 +1,152 @@
 # AlexBET Checker Website
 
-Landing page for the AlexBET Checker Telegram bot.
+Landing page for the AlexBET Checker Telegram bot — exclusive to Testudo Legio members.
 
 ## Quick Deploy
 
-### Option 1: GitHub Pages (Free)
+### GitHub Pages (Live)
 
-1. Push this repo to GitHub
-2. Go to Settings → Pages
-3. Source: Deploy from branch → `main` → `/website` folder
-4. Your site will be live at: `https://oddsifylabs.github.io/AlexBET-Checker`
+1. Go to: **Settings → Pages**
+2. Source: **Deploy from branch**
+3. Branch: **main** → Folder: **/docs**
+4. Save
 
-### Option 2: Vercel (Free)
+**Live URL:** https://oddsifylabs.github.io/AlexBET-Checker
 
-1. Push to GitHub
-2. Import project on [Vercel](https://vercel.com)
-3. Set root directory to `website`
-4. Deploy!
+---
 
-### Option 3: Netlify (Free)
+## Features
 
-1. Push to GitHub
-2. Connect repo on [Netlify](https://netlify.com)
-3. Set publish directory to `website`
-4. Deploy!
+### Design
+- ✅ Modern gray/black/white color scheme
+- ✅ Lucide icons (clean SVG)
+- ✅ Inter + JetBrains Mono fonts
+- ✅ Fully responsive (mobile-first)
+- ✅ Scroll animations
+- ✅ Sticky header with blur effect
 
-### Option 4: Custom Domain
+### Functionality
+- ✅ FAQ accordion (expandable)
+- ✅ Mobile menu toggle
+- ✅ Smooth scroll navigation
+- ✅ Active nav link highlighting
+- ✅ CTA click tracking (analytics-ready)
+- ✅ Demo section with bot conversation
 
-Deploy to any static hosting (Vercel, Netlify, Cloudflare Pages) and connect your domain:
-- `alexbetchecker.com`
-- `checker.oddsifylabs.com`
-- `alexbet.io`
+### Conversion
+- ✅ Whop sales page links (all CTAs)
+- ✅ "Members Only" messaging
+- ✅ Testudo Legio branding
+- ✅ Clear value proposition
+
+---
+
+## Analytics Setup
+
+### Google Analytics 4
+
+1. Create GA4 property at [analytics.google.com](https://analytics.google.com)
+2. Get your Measurement ID (starts with `G-`)
+3. Update `docs/index.html`:
+
+```html
+<!-- Replace this line -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+</script>
+```
+
+### Tracked Events
+
+```javascript
+// CTA clicks (Whop sales page)
+gtag('event', 'cta_click', {
+    'event_category': 'conversion',
+    'event_label': 'Whop Sales Page',
+    'value': 1
+});
+
+// Demo section views
+gtag('event', 'demo_view', {
+    'event_category': 'engagement',
+    'event_label': 'Demo Section Viewed'
+});
+```
+
+---
+
+## Customization
+
+### Update Whop Link
+
+All CTAs point to:
+```
+https://whop.com/joined/oddsify-shop/products/monthly-access-e0/
+```
+
+Search and replace if the URL changes.
+
+### Add Screenshots
+
+1. Add images to `docs/images/`
+2. Reference in HTML:
+```html
+<img src="images/screenshot.png" alt="Bot screenshot">
+```
+
+### Update FAQ
+
+Edit the FAQ section in `docs/index.html`. Each FAQ item:
+
+```html
+<div class="faq-card">
+    <div class="faq-question">
+        <i data-lucide="chevron-down"></i>
+        <h4>Your Question Here</h4>
+    </div>
+    <div class="faq-answer">
+        <p>Your answer here.</p>
+    </div>
+</div>
+```
+
+---
 
 ## File Structure
 
 ```
-website/
-├── index.html      # Main landing page
+docs/
+├── index.html          # Main landing page (22KB)
 ├── css/
-│   └── styles.css  # Dark theme, responsive styles
+│   └── styles.css      # Styles (17KB)
 ├── js/
-│   └── main.js     # Scroll animations, CTA tracking
-└── images/         # (Optional) Add screenshots, logos
+│   └── main.js         # Interactions (5KB)
+└── images/             # (Optional) Add screenshots
 ```
 
-## Customization
+---
 
-### Update Bot Link
+## Performance
 
-Replace all instances of `https://t.me/AlexBETCheckerBot` with your actual bot username.
+- **Total Size:** ~44KB (uncompressed)
+- **Fonts:** Google Fonts (Inter, JetBrains Mono)
+- **Icons:** Lucide CDN (lightweight SVG)
+- **No frameworks:** Pure HTML/CSS/JS
+- **Lighthouse Score:** 95+ expected
 
-### Add Analytics
-
-In `js/main.js`, add your analytics tracking:
-
-```javascript
-// Google Analytics
-gtag('event', 'cta_click', {
-    'event_category': 'engagement',
-    'event_label': 'Add to Telegram'
-});
-```
-
-### Add Screenshots
-
-1. Add images to `website/images/`
-2. Reference in HTML: `<img src="images/screenshot.png" alt="Bot screenshot">`
-
-## Features
-
-- ✅ Dark theme (matches Oddsify Labs branding)
-- ✅ Responsive design (mobile, tablet, desktop)
-- ✅ Scroll animations
-- ✅ Clear CTAs to Telegram bot
-- ✅ Roadmap section (shows future features)
-- ✅ Examples section (shows input formats)
-- ✅ SEO meta tags
+---
 
 ## Next Steps
 
-1. **Add bot screenshots** — Show the bot in action
-2. **Add testimonials** — User quotes from Testudo Legio
-3. **Add FAQ section** — Common questions about the bot
-4. **Add analytics** — Track CTA clicks and conversions
-5. **Connect domain** — Professional URL for marketing
+1. ✅ **Add Google Analytics** — Replace `G-XXXXXXXXXX` with your ID
+2. ✅ **Add bot screenshots** — Show actual bot interaction
+3. ✅ **Add testimonials** — Member quotes from Testudo Legio
+4. ✅ **Connect custom domain** — `alexbetchecker.com` or subdomain
+5. ✅ **A/B test CTAs** — Test button copy, placement
 
 ---
 
