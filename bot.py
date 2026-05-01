@@ -1,117 +1,55 @@
-import os
-import re
-import requests
-from datetime import datetime
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+"""Telegram Bet Result Bot — entry point."""
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+import logging
+import sys
 
-TEAM_ALIASES = {
-    "new york knicks": "ny",
-    "knicks": "ny",
-}
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
-def parse_message(text):
-    date_match = re.search(r"\b(\d{1,2}/\d{1,2}/\d{4})\b", text)
-    if not date_match:
-        return None, None
+from config import Config
+from handlers import error_handler, handle_message, start
 
-    date_str = date_match.group(1)
-    team = text.replace(date_str, "").strip().lower()
 
-    return team, date_str
+def setup_logging(level: str = "INFO") -> None:
+    """Configure structured logging for the bot."""
+    fmt = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+    logging.basicConfig(
+        level=getattr(logging, level.upper(), logging.INFO),
+        format=fmt,
+        stream=sys.stdout,
+    )
+    # Reduce noise from external libraries
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("telegram").setLevel(logging.WARNING)
 
-def fetch_game(team_text, date_str):
-    date_obj = datetime.strptime(date_str, "%m/%d/%Y")
-    espn_date = date_obj.strftime("%Y%m%d")
 
-    url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates={espn_date}"
-    res = requests.get(url, timeout=10)
-    res.raise_for_status()
+def main() -> None:
+    """Run the bot."""
+    config = Config.from_env()
+    setup_logging(config.log_level)
 
-    data = res.json()
-    events = data.get("events", [])
+    logger = logging.getLogger(__name__)
+    logger.info("Starting Oddsify Bet Result Bot")
+    logger.info("Log level: %s", config.log_level)
 
-    for event in events:
-        comps = event["competitions"][0]["competitors"]
-
-        teams = []
-        for c in comps:
-            teams.append({
-                "name": c["team"]["displayName"],
-                "score": int(c.get("score", 0)),
-                "winner": c.get("winner", False),
-            })
-
-        for t in teams:
-            if team_text in t["name"].lower():
-                opponent = teams[0] if teams[1] == t else teams[1]
-
-                return {
-                    "team": t["name"],
-                    "opponent": opponent["name"],
-                    "team_score": t["score"],
-                    "opponent_score": opponent["score"],
-                    "winner": t["winner"],
-                    "total": t["score"] + opponent["score"]
-                }
-
-    return None
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Send a bet like:\n\nNew York Knicks 4/30/2026"
+    app = (
+        ApplicationBuilder()
+        .token(config.telegram_token)
+        .build()
     )
 
-async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+    # Store config for handler access
+    app.bot_data["config"] = config
 
-    team, date = parse_message(text)
-
-    if not team or not date:
-        await update.message.reply_text("Format:\nTeam Name MM/DD/YYYY")
-        return
-
-    try:
-        result = fetch_game(team, date)
-
-        if not result:
-            await update.message.reply_text("No game found.")
-            return
-
-        bet = "✅ WON" if result["winner"] else "❌ LOST"
-
-        msg = f"""
-🏀 Bet Result
-
-{result['team']} vs {result['opponent']}
-Date: {date}
-
-Score:
-{result['team']}: {result['team_score']}
-{result['opponent']}: {result['opponent_score']}
-
-Total: {result['total']}
-Moneyline: {bet}
-"""
-
-        await update.message.reply_text(msg)
-
-    except Exception as e:
-        await update.message.reply_text(f"Error: {e}")
-
-def main():
-    if not TOKEN:
-        raise Exception("Missing TELEGRAM_BOT_TOKEN")
-
-    app = ApplicationBuilder().token(TOKEN).build()
-
+    # Register handlers
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
+    app.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+    )
+    app.add_error_handler(error_handler)
 
-    print("Bot running...")
+    logger.info("Bot polling started")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
