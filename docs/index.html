@@ -5,24 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AlexBET Checker | Instant Bet Results on Telegram</title>
     <meta name="description" content="Check your sports bet results instantly on Telegram. Moneyline results, live game status, smart team matching. Built by Oddsify Labs.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <!-- Header -->
-    <header>
+    <header class="header">
         <div class="container">
-            <nav>
-                <div class="logo">
-                    <span class="logo-icon">🏀</span>
+            <nav class="nav">
+                <a href="#" class="logo">
+                    <i data-lucide="circle-check" class="logo-icon"></i>
                     <span class="logo-text">AlexBET Checker</span>
-                </div>
+                </a>
                 <ul class="nav-links">
                     <li><a href="#features">Features</a></li>
                     <li><a href="#how-it-works">How It Works</a></li>
                     <li><a href="#examples">Examples</a></li>
-                    <li><a href="https://www.oddsifylabs.com" target="_blank">Oddsify Labs</a></li>
+                    <li><a href="#roadmap">Roadmap</a></li>
                 </ul>
-                <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary">Add to Telegram</a>
+                <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary">
+                    <i data-lucide="send"></i>
+                    <span>Open Bot</span>
+                </a>
+                <button class="mobile-menu-btn" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
             </nav>
         </div>
     </header>
@@ -30,50 +45,124 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
+            <div class="hero-badge">
+                <i data-lucide="zap"></i>
+                <span>Instant Results</span>
+            </div>
             <h1>Did Your Bet Hit?</h1>
-            <p class="subtitle">Instant sports bet results on Telegram. No apps. No logins. Just type a team and date.</p>
+            <p class="hero-subtitle">Check your sports bet results in seconds. No apps. No logins. Just type a team and date on Telegram.</p>
             <div class="hero-cta">
                 <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary btn-large">
-                    <span class="btn-icon">🤖</span>
-                    Add to Telegram — It's Free
+                    <i data-lucide="send"></i>
+                    <span>Add to Telegram — Free</span>
+                </a>
+                <a href="#how-it-works" class="btn btn-secondary btn-large">
+                    <i data-lucide="arrow-down"></i>
+                    <span>Learn More</span>
                 </a>
             </div>
-            <p class="hero-note">NBA moneyline results • Live game status • Smart team matching</p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number">126+</span>
+                    <span class="stat-label">Team Aliases</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number">&lt;2s</span>
+                    <span class="stat-label">Response Time</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number">24/7</span>
+                    <span class="stat-label">Always Online</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo">
+        <div class="container">
+            <div class="demo-card">
+                <div class="demo-header">
+                    <div class="demo-dots">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                    </div>
+                    <span class="demo-title">Telegram</span>
+                </div>
+                <div class="demo-content">
+                    <div class="message user">
+                        <div class="message-bubble">
+                            <p>Lakers 4/30/2026</p>
+                        </div>
+                    </div>
+                    <div class="message bot">
+                        <div class="message-bubble">
+                            <div class="result-header">
+                                <i data-lucide="circle-check" class="result-icon win"></i>
+                                <span class="result-title">Los Angeles Lakers</span>
+                            </div>
+                            <div class="result-score">LAL 112 - 108 NYK</div>
+                            <div class="result-status">
+                                <span class="badge success">WIN</span>
+                                <span class="result-date">April 30, 2026</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Features Section -->
     <section id="features" class="features">
         <div class="container">
-            <h2>Why Use AlexBET Checker?</h2>
+            <div class="section-header">
+                <h2>Why Use AlexBET Checker?</h2>
+                <p>Everything you need to check your bets, nothing you don't.</p>
+            </div>
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
+                    <div class="feature-icon">
+                        <i data-lucide="zap"></i>
+                    </div>
                     <h3>Instant Results</h3>
                     <p>Type a team and date. Get your answer in seconds. No navigating apps or refreshing scoreboards.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🎯</div>
-                    <h3>Smart Team Matching</h3>
+                    <div class="feature-icon">
+                        <i data-lucide="search-check"></i>
+                    </div>
+                    <h3>Smart Matching</h3>
                     <p>Lakers, LA, LAL, Los Angeles — we recognize them all. 126+ team aliases across all major sports.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Live Game Status</h3>
+                    <div class="feature-icon">
+                        <i data-lucide="clock"></i>
+                    </div>
+                    <h3>Live Status</h3>
                     <p>Final, in progress, or postponed — know the game state before checking your result.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🛡️</div>
+                    <div class="feature-icon">
+                        <i data-lucide="shield-check"></i>
+                    </div>
                     <h3>Built for Scale</h3>
                     <p>Async architecture, rate limiting, and retry logic ensure reliable results even during peak hours.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">📱</div>
+                    <div class="feature-icon">
+                        <i data-lucide="message-square"></i>
+                    </div>
                     <h3>Telegram Native</h3>
                     <p>Already use Telegram? Perfect. No new apps to download. Works on phone, tablet, and desktop.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
+                    <div class="feature-icon">
+                        <i data-lucide="lock"></i>
+                    </div>
                     <h3>Privacy First</h3>
                     <p>No account required. No data stored. Your bet checks are ephemeral and private.</p>
                 </div>
@@ -84,24 +173,36 @@
     <!-- How It Works Section -->
     <section id="how-it-works" class="how-it-works">
         <div class="container">
-            <h2>How It Works</h2>
+            <div class="section-header">
+                <h2>How It Works</h2>
+                <p>Three simple steps to instant bet results.</p>
+            </div>
             <div class="steps">
                 <div class="step">
-                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <i data-lucide="user-plus"></i>
+                    </div>
+                    <div class="step-number">01</div>
                     <div class="step-content">
                         <h3>Add the Bot</h3>
-                        <p>Click the button below or search <code>@AlexBETCheckerBot</code> in Telegram. Hit Start.</p>
+                        <p>Click the button below or search <code>@AlexBETCheckerBot</code> in Telegram. Hit Start to begin.</p>
                     </div>
                 </div>
                 <div class="step">
-                    <div class="step-number">2</div>
+                    <div class="step-icon">
+                        <i data-lucide="type"></i>
+                    </div>
+                    <div class="step-number">02</div>
                     <div class="step-content">
                         <h3>Type Your Bet</h3>
                         <p>Enter a team and date in any format: <code>Lakers 4/30/2026</code> or <code>GSW 04-30-2026</code></p>
                     </div>
                 </div>
                 <div class="step">
-                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <i data-lucide="check"></i>
+                    </div>
+                    <div class="step-number">03</div>
                     <div class="step-content">
                         <h3>Get Your Result</h3>
                         <p>Instant response: Win, Loss, or In Progress. Plus final score and game status.</p>
@@ -109,7 +210,10 @@
                 </div>
             </div>
             <div class="cta-center">
-                <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary">Try It Now</a>
+                <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary">
+                    <i data-lucide="send"></i>
+                    <span>Try It Now</span>
+                </a>
             </div>
         </div>
     </section>
@@ -117,31 +221,51 @@
     <!-- Examples Section -->
     <section id="examples" class="examples">
         <div class="container">
-            <h2>Supported Input Formats</h2>
-            <p class="section-intro">AlexBET Checker recognizes team names, nicknames, abbreviations, and multiple date formats.</p>
+            <div class="section-header">
+                <h2>Supported Input Formats</h2>
+                <p>AlexBET Checker recognizes team names, nicknames, abbreviations, and multiple date formats.</p>
+            </div>
             <div class="examples-grid">
                 <div class="example-card">
-                    <div class="example-label">Full Team Name</div>
+                    <div class="example-label">
+                        <i data-lucide="tag"></i>
+                        <span>Full Team Name</span>
+                    </div>
                     <code>New York Knicks 4/30/2026</code>
                 </div>
                 <div class="example-card">
-                    <div class="example-label">Nickname</div>
+                    <div class="example-label">
+                        <i data-lucide="tag"></i>
+                        <span>Nickname</span>
+                    </div>
                     <code>Lakers 5/1/2026</code>
                 </div>
                 <div class="example-card">
-                    <div class="example-label">Abbreviation</div>
+                    <div class="example-label">
+                        <i data-lucide="tag"></i>
+                        <span>Abbreviation</span>
+                    </div>
                     <code>GSW 04-30-2026</code>
                 </div>
                 <div class="example-card">
-                    <div class="example-label">Short Name</div>
+                    <div class="example-label">
+                        <i data-lucide="tag"></i>
+                        <span>Short Name</span>
+                    </div>
                     <code>nyk 4/30/2026</code>
                 </div>
                 <div class="example-card">
-                    <div class="example-label">ISO Date</div>
+                    <div class="example-label">
+                        <i data-lucide="tag"></i>
+                        <span>ISO Date</span>
+                    </div>
                     <code>Golden State 2026-04-30</code>
                 </div>
                 <div class="example-card">
-                    <div class="example-label">City Only</div>
+                    <div class="example-label">
+                        <i data-lucide="tag"></i>
+                        <span>City Only</span>
+                    </div>
                     <code>Boston 4/29/2026</code>
                 </div>
             </div>
@@ -149,47 +273,62 @@
     </section>
 
     <!-- Roadmap Section -->
-    <section class="roadmap">
+    <section id="roadmap" class="roadmap">
         <div class="container">
-            <h2>Coming Soon</h2>
+            <div class="section-header">
+                <h2>Coming Soon</h2>
+                <p>We're constantly adding new features to make bet checking even better.</p>
+            </div>
             <div class="roadmap-grid">
                 <div class="roadmap-item">
-                    <div class="roadmap-status done">✓</div>
+                    <div class="roadmap-status done">
+                        <i data-lucide="check"></i>
+                    </div>
                     <div class="roadmap-content">
                         <h4>NBA Moneyline Results</h4>
                         <p>Instant win/loss checking for NBA games</p>
                     </div>
                 </div>
                 <div class="roadmap-item">
-                    <div class="roadmap-status done">✓</div>
+                    <div class="roadmap-status done">
+                        <i data-lucide="check"></i>
+                    </div>
                     <div class="roadmap-content">
                         <h4>Smart Team Matching</h4>
                         <p>126+ team aliases recognized</p>
                     </div>
                 </div>
                 <div class="roadmap-item">
-                    <div class="roadmap-status soon">⏳</div>
+                    <div class="roadmap-status in-progress">
+                        <i data-lucide="loader"></i>
+                    </div>
                     <div class="roadmap-content">
                         <h4>Spread & Over/Under</h4>
                         <p>Check spread bets and totals, not just moneyline</p>
                     </div>
                 </div>
                 <div class="roadmap-item">
-                    <div class="roadmap-status soon">⏳</div>
+                    <div class="roadmap-status upcoming">
+                        <i data-lucide="calendar"></i>
+                    </div>
                     <div class="roadmap-content">
                         <h4>Multi-Sport Support</h4>
                         <p>NFL, MLB, NHL, and soccer leagues</p>
                     </div>
                 </div>
                 <div class="roadmap-item">
-                    <div class="roadmap-status future">🔮</div>
+                    <div class="roadmap-status upcoming">
+                        <i data-lucide="calendar"></i>
+                    </div>
                     <div class="roadmap-content">
                         <h4>Live Odds Comparison</h4>
                         <p>Compare your line to DraftKings, FanDuel, BetMGM</p>
                     </div>
                 </div>
                 <div class="roadmap-item">
-                    <div class="roadmap-status future">🔮</div>
+                    <div class="roadmap-status upcoming">
+                        <i data-lucide="calendar"></i>
+                    </div>
                     <div class="roadmap-content">
                         <h4>CLV Tracking</h4>
                         <p>Track closing line value on every bet</p>
@@ -200,35 +339,61 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="cta-section">
+    <section class="cta">
         <div class="container">
-            <h2>Ready to Check Your Bets?</h2>
-            <p>Add AlexBET Checker to Telegram and get instant results.</p>
-            <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary btn-large">
-                <span class="btn-icon">🤖</span>
-                Add to Telegram
-            </a>
-            <p class="cta-note">Free • No signup required • Works on all devices</p>
+            <div class="cta-content">
+                <h2>Ready to Check Your Bets?</h2>
+                <p>Add AlexBET Checker to Telegram and get instant results. Free forever.</p>
+                <a href="https://t.me/AlexBETCheckerBot" class="btn btn-primary btn-large">
+                    <i data-lucide="send"></i>
+                    <span>Add to Telegram</span>
+                </a>
+                <div class="cta-features">
+                    <div class="cta-feature">
+                        <i data-lucide="check"></i>
+                        <span>Free</span>
+                    </div>
+                    <div class="cta-feature">
+                        <i data-lucide="check"></i>
+                        <span>No signup</span>
+                    </div>
+                    <div class="cta-feature">
+                        <i data-lucide="check"></i>
+                        <span>All devices</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer>
+    <footer class="footer">
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <div class="logo">
-                        <span class="logo-icon">🏀</span>
+                    <a href="#" class="logo">
+                        <i data-lucide="circle-check"></i>
                         <span class="logo-text">AlexBET Checker</span>
-                    </div>
+                    </a>
                     <p>Built by <a href="https://www.oddsifylabs.com" target="_blank">Oddsify Labs</a></p>
                 </div>
                 <div class="footer-links">
-                    <a href="https://github.com/oddsifylabs/AlexBET-Checker" target="_blank">GitHub</a>
-                    <a href="https://www.oddsifylabs.com" target="_blank">Oddsify Labs</a>
-                    <a href="https://t.me/testudolegio" target="_blank">Testudo Legio</a>
+                    <a href="https://github.com/oddsifylabs/AlexBET-Checker" target="_blank">
+                        <i data-lucide="github"></i>
+                        <span>GitHub</span>
+                    </a>
+                    <a href="https://www.oddsifylabs.com" target="_blank">
+                        <i data-lucide="globe"></i>
+                        <span>Oddsify Labs</span>
+                    </a>
+                    <a href="https://t.me/testudolegio" target="_blank">
+                        <i data-lucide="send"></i>
+                        <span>Testudo Legio</span>
+                    </a>
                 </div>
-                <p class="copyright">© 2026 Oddsify Labs. All rights reserved.</p>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Oddsify Labs. All rights reserved.</p>
             </div>
         </div>
     </footer>
