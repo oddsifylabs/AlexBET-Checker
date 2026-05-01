@@ -1,4 +1,4 @@
-"""Telegram Bet Result Bot — entry point."""
+"""AlexBET Checker — Telegram entry point."""
 
 import logging
 import sys
@@ -28,7 +28,7 @@ def main() -> None:
     setup_logging(config.log_level)
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting Oddsify Bet Result Bot")
+    logger.info("Starting AlexBET Checker")
     logger.info("Log level: %s", config.log_level)
 
     app = (

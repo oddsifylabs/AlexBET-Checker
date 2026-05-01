@@ -61,7 +61,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("User %s (%s) started the bot", user.id, user.username)
 
     welcome_text = (
-        "👋 Welcome to the Oddsify Bet Result Bot!\n\n"
+        "👋 Welcome to AlexBET Checker!\n\n"
         "Send me a bet to check the result:\n"
         "• New York Knicks 4/30/2026\n"
         "• Lakers 5/1/2026\n"

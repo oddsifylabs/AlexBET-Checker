@@ -1,6 +1,6 @@
-# 🏀 Oddsify Bet Result Bot
+# 🏀 AlexBET Checker
 
-A production-ready Telegram bot that checks NBA game results and tells you if your moneyline bet won.
+A production-ready Telegram bot that checks sports game results and tells you if your bet won.
 
 ## Features
 
@@ -95,14 +95,55 @@ telegram-bet-bot/
 - **Date boundaries** — ESPN uses UTC-relative date ranges. A very late-night game may appear under the next calendar day
 - **In-progress games** — Results shown as "in progress"; final status updates when the game ends
 
+---
+
 ## Roadmap
 
-- [ ] Spread & over/under support
-- [ ] Additional leagues (NFL, MLB, NHL, soccer)
-- [ ] Persistent user bet history
-- [ ] Odds comparison integration
-- [ ] Parlay calculator
-- [ ] Redis-backed rate limiting for multi-instance deployments
+### Phase 1 — Core Stability (Current)
+- [x] Async ESPN API client with retries
+- [x] Team alias matching (126 aliases)
+- [x] Rate limiting
+- [x] Structured logging
+- [x] Input validation
+- [x] Game status detection (final / in-progress / postponed)
+- [ ] Add unit tests (pytest)
+- [ ] Health check endpoint for Railway
+- [ ] Redis-backed rate limiting (multi-instance deployments)
+
+### Phase 2 — Bet Types
+- [ ] **Spread checking** — "Lakers -5.5" → win/loss/push
+- [ ] **Over/Under** — "Lakers vs Celtics over 220.5"
+- [ ] **Parlay calculator** — Check multiple legs at once
+- [ ] **Teaser support** — Adjusted spreads for teasers
+
+### Phase 3 — Multi-Sport Expansion
+- [ ] **NFL** — Football scores and betting lines
+- [ ] **MLB** — Baseball moneyline, run line, totals
+- [ ] **NHL** — Hockey puck line and totals
+- [ ] **Soccer** — Premier League, La Liga, Champions League
+- [ ] **Auto-detect sport** — Infer league from team name
+
+### Phase 4 — Odds & Data Integration
+- [ ] **Live odds comparison** — Pull lines from DraftKings, FanDuel, BetMGM
+- [ ] **Closing line value (CLV)** — Compare your bet price to closing line
+- [ ] **Historical results DB** — SQLite/PostgreSQL for persistent bet tracking
+- [ ] **Trends & analytics** — Win rate, ROI, best/worst teams
+
+### Phase 5 — User Features
+- [ ] **User bet history** — Save and review past bets
+- [ ] **Bet slip parser** — Upload screenshot, OCR extracts bet details
+- [ ] **Push notifications** — Alert when your live bet is close to hitting
+- [ ] **Group chat mode** — Compete with friends on bet accuracy
+- [ ] **Leaderboards** — Public/private group leaderboards
+
+### Phase 6 — Advanced Tools
+- [ ] **AI bet analysis** — Suggest bets based on recent trends
+- [ ] **Arbitrage scanner** — Find +EV opportunities across sportsbooks
+- [ ] **Bankroll tracker** — Log stakes, track profit/loss over time
+- [ ] **Export to CSV/Excel** — Download bet history for tax/accounting
+- [ ] **Webhook integrations** — Zapier, Make.com for custom workflows
+
+---
 
 ## License
 
