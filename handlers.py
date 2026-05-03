@@ -10,7 +10,9 @@ from telegram.ext import ContextTypes
 
 from config import Config
 from espn_client import ESPNClient, ESPNError
-from parsers import parse_message, validate_date
+from evaluator import evaluate_bet
+from odds_client import OddsAPIClient
+from parsers import BetRequest, parse_message, validate_date
 
 logger = logging.getLogger(__name__)
 
@@ -28,31 +30,64 @@ def _is_rate_limited(user_id: int, max_requests: int, window_seconds: float = 60
     return len(recent) >= max_requests
 
 
-def _format_result(result, date_str: str) -> str:
-    """Format a GameResult into a user-friendly message."""
-    if not result.completed:
-        status = f"⏳ {result.status_detail}"
-        if result.clock:
-            status += f" — {result.clock}"
-        if result.period:
-            status += f" (Q{result.period})"
-        bet_status = "🟡 Game in progress"
+def _format_bet_result(bet_result, date_str: str) -> str:
+    """Format a BetResult into a user-friendly message."""
+    req = bet_result.bet_request
+    game = bet_result.game_result
+
+    # Status emoji
+    if not game.completed:
+        status = f"⏳ {game.status_detail}"
+        if game.clock:
+            status += f" — {game.clock}"
+        if game.period:
+            status += f" (P{game.period})"
     else:
         status = "✅ Final"
-        bet_status = "✅ WON" if result.winner else "❌ LOST"
 
-    msg = (
-        f"🏀 Bet Result\n\n"
-        f"{result.team} vs {result.opponent}\n"
-        f"Date: {date_str}\n"
-        f"Status: {status}\n\n"
-        f"Score:\n"
-        f"{result.team}: {result.team_score}\n"
-        f"{result.opponent}: {result.opponent_score}\n\n"
-        f"Total: {result.total}\n"
-        f"Moneyline: {bet_status}"
-    )
-    return msg
+    # Outcome emoji
+    outcome_emojis = {
+        "win": "✅ WON",
+        "loss": "❌ LOST",
+        "push": "🟡 PUSH",
+        "pending": "🟡 PENDING",
+    }
+    outcome_emoji = outcome_emojis.get(bet_result.outcome, "❓")
+
+    # Sport emoji
+    sport_emojis = {
+        "nba": "🏀",
+        "nfl": "🏈",
+        "mlb": "⚾",
+        "nhl": "🏒",
+        "ncaaf": "🏈",
+        "ncaab": "🏀",
+    }
+    sport_emoji = sport_emojis.get(req.sport, "🏆")
+
+    lines = [
+        f"{sport_emoji} Bet Result",
+        "",
+        f"{game.team} vs {game.opponent}",
+        f"Date: {date_str}",
+        f"Status: {status}",
+        "",
+        f"Score:",
+        f"{game.team}: {game.team_score}",
+        f"{game.opponent}: {game.opponent_score}",
+        "",
+        f"Bet: {bet_result.bet_type_display} {bet_result.user_line_display}",
+        f"Result: {outcome_emoji}",
+    ]
+
+    if game.completed:
+        lines.append(f"Detail: {bet_result.result_detail}")
+        if bet_result.clv_display:
+            lines.append(f"CLV: {bet_result.clv_display}")
+        elif bet_result.closing_line is None:
+            lines.append("CLV: No closing line data available")
+
+    return "\n".join(lines)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -62,14 +97,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     welcome_text = (
         "👋 Welcome to AlexBET Checker!\n\n"
-        "Send me a bet to check the result:\n"
-        "• New York Knicks 4/30/2026\n"
+        "Send me a bet to check the result:\n\n"
+        "*Moneyline*\n"
         "• Lakers 5/1/2026\n"
-        "• GSW 04-30-2026\n\n"
-        "I support team names, nicknames, and abbreviations.\n"
-        "Currently checking moneyline only."
+        "• NFL Chiefs 9/10/2026\n\n"
+        "*Spread*\n"
+        "• Lakers -5.5 5/1/2026\n"
+        "• NFL Chiefs -3 9/10/2026\n\n"
+        "*Over / Under*\n"
+        "• Lakers O 220.5 5/1/2026\n"
+        "• NFL Chiefs vs Ravens U 47.5 9/10/2026\n\n"
+        "Sports: NBA, NFL, MLB, NHL, NCAAF, NCAAB\n"
+        "I also check CLV when odds data is available."
     )
-    await update.message.reply_text(welcome_text)
+    await update.message.reply_text(welcome_text, parse_mode="Markdown")
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -95,19 +136,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return
 
     # Parse input
-    team, date = parse_message(text)
-    if not team or not date:
+    bet: Optional[BetRequest] = parse_message(text)
+    if not bet:
         await update.message.reply_text(
             "❌ I couldn't understand that.\n\n"
-            "Format: Team Name MM/DD/YYYY\n"
-            "Examples:\n"
-            "• New York Knicks 4/30/2026\n"
-            "• Lakers 5/1/2026"
+            "Format examples:\n"
+            "• Team Name MM/DD/YYYY\n"
+            "• Lakers -5.5 5/1/2026\n"
+            "• Chiefs vs Ravens U 47.5 9/10/2026\n"
+            "• NHL Oilers +1.5 5/1/2026"
         )
         return
 
     # Validate date
-    valid_date = validate_date(date)
+    valid_date = validate_date(bet.date)
     if not valid_date:
         await update.message.reply_text(
             "❌ Invalid date. Please use MM/DD/YYYY format with a real date."
@@ -118,8 +160,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.chat.send_action(action="typing")
 
     try:
-        async with ESPNClient(timeout=config.espn_timeout) as client:
-            result = await client.fetch_game(team, date)
+        async with ESPNClient(sport=bet.sport, timeout=config.espn_timeout) as client:
+            game = await client.fetch_game(bet.team, bet.date)
     except ESPNError as e:
         logger.warning("ESPN error for user %s: %s", user_id, e)
         await update.message.reply_text(f"⚠️ {e}")
@@ -131,17 +173,35 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return
 
-    if not result:
+    if not game:
         await update.message.reply_text(
-            f"🔍 No game found for {team} on {date}.\n\n"
+            f"🔍 No game found for {bet.team} on {bet.date}.\n\n"
             "Tips:\n"
             "• Make sure the date is correct\n"
             "• Try the full team name or abbreviation\n"
+            "• Check the sport (default is NBA)\n"
             "• Games might not be scheduled yet"
         )
         return
 
-    msg = _format_result(result, date)
+    # Fetch closing line for CLV (best effort)
+    closing_line = None
+    if config.odds_api_key:
+        try:
+            async with OddsAPIClient(api_key=config.odds_api_key, timeout=config.espn_timeout) as odds_client:
+                closing_line = await odds_client.fetch_closing_line(
+                    sport=bet.sport,
+                    team=bet.team,
+                    opponent=game.opponent,
+                    date_str=bet.date,
+                )
+        except Exception:
+            logger.exception("Odds API fetch failed for user %s", user_id)
+            # Non-fatal — continue without CLV
+
+    # Evaluate bet
+    bet_result = evaluate_bet(bet, game, closing_line)
+    msg = _format_bet_result(bet_result, bet.date)
     await update.message.reply_text(msg)
 
 

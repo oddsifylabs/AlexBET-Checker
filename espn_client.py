@@ -1,4 +1,4 @@
-"""Async ESPN API client for NBA scoreboard data."""
+"""Async ESPN API client for multi-sport scoreboard data."""
 
 import logging
 from dataclasses import dataclass
@@ -13,7 +13,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from config import ESPN_BASE_URL
+from config import ESPN_SPORT_URLS
 
 logger = logging.getLogger(__name__)
 
@@ -32,14 +32,20 @@ class GameResult:
     status_detail: str
     period: int
     clock: Optional[str]
+    sport: str
+    espn_event_id: Optional[str] = None
 
 
 class ESPNClient:
-    """Async client for ESPN NBA scoreboard API."""
+    """Async client for ESPN scoreboard API."""
 
-    def __init__(self, timeout: float = 10.0):
+    def __init__(self, sport: str = "nba", timeout: float = 10.0):
+        self.sport = sport.lower()
         self.timeout = timeout
         self._client: Optional[httpx.AsyncClient] = None
+        self._base_url = ESPN_SPORT_URLS.get(self.sport)
+        if not self._base_url:
+            raise ESPNError(f"Unsupported sport: {sport}")
 
     async def __aenter__(self) -> "ESPNClient":
         self._client = httpx.AsyncClient(timeout=httpx.Timeout(self.timeout))
@@ -60,7 +66,7 @@ class ESPNClient:
         if not self._client:
             raise RuntimeError("Client not initialized. Use async context manager.")
 
-        url = f"{ESPN_BASE_URL}?dates={espn_date}"
+        url = f"{self._base_url}?dates={espn_date}"
         logger.info("Fetching ESPN scoreboard: %s", url)
 
         response = await self._client.get(url)
@@ -142,6 +148,7 @@ class ESPNClient:
                     status_detail = type_info.get("description", "Unknown")
                     period = status.get("period", 0)
                     clock = status.get("displayClock")
+                    event_id = event.get("id")
 
                     return GameResult(
                         team=t["name"],
@@ -154,6 +161,8 @@ class ESPNClient:
                         status_detail=status_detail,
                         period=period,
                         clock=clock,
+                        sport=self.sport,
+                        espn_event_id=event_id,
                     )
 
         logger.info("Team '%s' not found in games for %s", team_text, date_str)
