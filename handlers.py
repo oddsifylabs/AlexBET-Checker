@@ -5,7 +5,7 @@ import time
 from collections import defaultdict
 from typing import Optional
 
-from telegram import Update
+from telegram import BotCommand, Update
 from telegram.ext import ContextTypes
 
 from config import Config, BOOKMAKER_NAMES
@@ -22,6 +22,15 @@ _rate_limit_store: dict[int, list[float]] = defaultdict(list)
 
 # Shared odds cache instance
 _odds_cache = OddsCache()
+
+# Bot commands list — kept here so bot.py can reference it
+BOT_COMMANDS: list[BotCommand] = [
+    BotCommand("start", "Start the bot and see welcome message"),
+    BotCommand("help", "How to use the bot"),
+    BotCommand("sports", "List supported sports"),
+    BotCommand("format", "See accepted bet input formats"),
+    BotCommand("clv", "What is Closing Line Value?"),
+]
 
 
 def _is_rate_limited(user_id: int, max_requests: int, window_seconds: float = 60.0) -> bool:
@@ -131,10 +140,109 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "*Over / Under*\n"
         "• Lakers O 220.5 5/1/2026\n"
         "• NFL Chiefs vs Ravens U 47.5 9/10/2026\n\n"
+        "Type /help for more details.\n"
         "Sports: NBA, NFL, MLB, NHL, NCAAF, NCAAB\n"
-        "CLV checked across: DK, FD, MGM, Caesars, PB, Bovada, Barstool, Wynn, Rivers"
+        "CLV: DK, FD, MGM, Caesars, PB, Bovada, Barstool, Wynn, Rivers"
     )
     await update.message.reply_text(welcome_text, parse_mode="Markdown")
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /help command."""
+    help_text = (
+        "📋 *How to Use AlexBET Checker*\n\n"
+        "Just send me your bet and I'll check if it won!\n\n"
+        "*Moneyline* — Did your team win?\n"
+        "• `Lakers 5/1/2026`\n"
+        "• `Lakers +150 5/1/2026` (includes CLV)\n\n"
+        "*Spread* — Did your team cover?\n"
+        "• `Lakers -5.5 5/1/2026`\n"
+        "• `Chiefs +3 9/10/2026`\n\n"
+        "*Over / Under* — Did the total go over or under?\n"
+        "• `Lakers O 220.5 5/1/2026`\n"
+        "• `Chiefs vs Ravens U 47.5 9/10/2026`\n\n"
+        "*Sport Prefixes* (default is NBA):\n"
+        "• `NBA`, `NFL`, `MLB`, `NHL`, `NCAAF`, `NCAAB`\n"
+        "• Example: `NFL Chiefs -3 9/10/2026`\n\n"
+        "*CLV* = Closing Line Value — did you beat the market?\n"
+        "Type /clv to learn more.\n\n"
+        "Type /format for more input examples.\n"
+        "Type /sports for supported leagues."
+    )
+    await update.message.reply_text(help_text, parse_mode="Markdown")
+
+
+async def sports_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /sports command."""
+    sports_text = (
+        "🏟️ *Supported Sports*\n\n"
+        "🏀 *NBA* — Basketball\n"
+        "🏈 *NFL* — Football\n"
+        "⚾ *MLB* — Baseball\n"
+        "🏒 *NHL* — Hockey\n"
+        "🏈 *NCAAF* — College Football\n"
+        "🏀 *NCAAB* — College Basketball\n\n"
+        "Default sport is *NBA* if none specified.\n"
+        "Use the prefix at the start of your message:\n"
+        "• `NFL Chiefs 9/10/2026`\n"
+        "• `MLB Yankees 5/1/2026`"
+    )
+    await update.message.reply_text(sports_text, parse_mode="Markdown")
+
+
+async def format_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /format command."""
+    format_text = (
+        "📝 *Accepted Input Formats*\n\n"
+        "*Moneyline*\n"
+        "`Lakers 5/1/2026`\n"
+        "`Lakers +150 5/1/2026`\n"
+        "`NFL Chiefs 9/10/2026`\n\n"
+        "*Spread*\n"
+        "`Lakers -5.5 5/1/2026`\n"
+        "`Chiefs +3 9/10/2026`\n"
+        "`NHL Oilers +1.5 5/1/2026`\n\n"
+        "*Over / Under*\n"
+        "`Lakers O 220.5 5/1/2026`\n"
+        "`Lakers U 220.5 5/1/2026`\n"
+        "`Chiefs vs Ravens U 47.5 9/10/2026`\n\n"
+        "*Date formats accepted:*\n"
+        "• `5/1/2026`\n"
+        "• `05-01-2026`\n"
+        "• `2026-05-01`\n\n"
+        "*Team names accepted:*\n"
+        "• Full name: `Los Angeles Lakers`\n"
+        "• Nickname: `Lakers`\n"
+        "• Abbreviation: `LAL`\n"
+        "• City: `Los Angeles`"
+    )
+    await update.message.reply_text(format_text, parse_mode="Markdown")
+
+
+async def clv_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /clv command."""
+    clv_text = (
+        "📊 *Closing Line Value (CLV)*\n\n"
+        "CLV tells you whether you beat the market.\n\n"
+        "*Spread Example:*\n"
+        "You took `Lakers -5.5`\n"
+        "Game closed `Lakers -7.0`\n"
+        "CLV = `+1.5` ✓\n"
+        "You got a better line than the sharps!\n\n"
+        "*Total Example:*\n"
+        "You took `Over 220.5`\n"
+        "Game closed `Over 222`\n"
+        "CLV = `+1.5` ✓\n"
+        "The market moved your way.\n\n"
+        "*Moneyline Example:*\n"
+        "You took `Lakers +150`\n"
+        "Game closed `Lakers +130`\n"
+        "CLV = `+3.5%` ✓\n"
+        "Your odds were better than the close.\n\n"
+        "Positive CLV over time = +EV bettor.\n"
+        "We check: DK, FD, MGM, Caesars, PB, Bovada, Barstool, Wynn, Rivers"
+    )
+    await update.message.reply_text(clv_text, parse_mode="Markdown")
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -169,7 +277,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             "• Lakers +150 5/1/2026\n"
             "• Lakers -5.5 5/1/2026\n"
             "• Chiefs vs Ravens U 47.5 9/10/2026\n"
-            "• NHL Oilers +1.5 5/1/2026"
+            "• NHL Oilers +1.5 5/1/2026\n\n"
+            "Type /help for more info."
         )
         return
 
@@ -205,7 +314,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             "• Make sure the date is correct\n"
             "• Try the full team name or abbreviation\n"
             "• Check the sport (default is NBA)\n"
-            "• Games might not be scheduled yet"
+            "• Games might not be scheduled yet\n\n"
+            "Type /format for more examples."
         )
         return
 
