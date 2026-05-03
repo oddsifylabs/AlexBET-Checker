@@ -11,6 +11,7 @@ from telegram.ext import ContextTypes
 from config import Config, BOOKMAKER_NAMES
 from espn_client import ESPNClient, ESPNError
 from evaluator import evaluate_bet
+from odds_cache import OddsCache
 from odds_client import OddsAPIClient
 from parsers import BetRequest, parse_message, validate_date
 
@@ -18,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 # In-memory rate limiter: user_id -> list of timestamps
 _rate_limit_store: dict[int, list[float]] = defaultdict(list)
+
+# Shared odds cache instance
+_odds_cache = OddsCache()
 
 
 def _is_rate_limited(user_id: int, max_requests: int, window_seconds: float = 60.0) -> bool:
@@ -90,7 +94,7 @@ def _format_bet_result(bet_result, date_str: str) -> str:
                 if bc.closing_line is not None and bc.clv_display is not None:
                     name = BOOKMAKER_NAMES.get(bc.book_key, bc.book_name)
                     clv_lines.append(
-                        f"{name}: {bc.closing_line} ({bc.clv_display})"
+                        f"{name}: {bc.closing_line_display} ({bc.clv_display})"
                     )
 
             if clv_lines:
@@ -100,10 +104,11 @@ def _format_bet_result(bet_result, date_str: str) -> str:
 
                 if bet_result.avg_clv_display:
                     lines.append(f"Avg CLV: {bet_result.avg_clv_display}")
-        elif req.bet_type == "moneyline":
-            lines.append("CLV: Moneyline CLV not yet supported")
         else:
-            lines.append("CLV: No closing line data available")
+            if req.bet_type == "moneyline" and req.ml_odds is None:
+                lines.append("CLV: Add odds (e.g., Lakers +150) to see CLV")
+            else:
+                lines.append("CLV: No closing line data available")
 
     return "\n".join(lines)
 
@@ -118,6 +123,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "Send me a bet to check the result:\n\n"
         "*Moneyline*\n"
         "• Lakers 5/1/2026\n"
+        "• Lakers +150 5/1/2026 (with CLV)\n"
         "• NFL Chiefs 9/10/2026\n\n"
         "*Spread*\n"
         "• Lakers -5.5 5/1/2026\n"
@@ -160,6 +166,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             "❌ I couldn't understand that.\n\n"
             "Format examples:\n"
             "• Team Name MM/DD/YYYY\n"
+            "• Lakers +150 5/1/2026\n"
             "• Lakers -5.5 5/1/2026\n"
             "• Chiefs vs Ravens U 47.5 9/10/2026\n"
             "• NHL Oilers +1.5 5/1/2026"
@@ -202,11 +209,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return
 
-    # Fetch closing lines for CLV (best effort)
+    # Fetch closing lines for CLV (best effort, with local cache)
     multi_book_lines = None
     if config.odds_api_key:
         try:
-            async with OddsAPIClient(api_key=config.odds_api_key, timeout=config.espn_timeout) as odds_client:
+            async with OddsAPIClient(
+                api_key=config.odds_api_key,
+                timeout=config.espn_timeout,
+                cache=_odds_cache,
+            ) as odds_client:
                 multi_book_lines = await odds_client.fetch_closing_lines(
                     sport=bet.sport,
                     team=bet.team,

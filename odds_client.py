@@ -1,7 +1,6 @@
 """Async client for The Odds API — closing line value (CLV) lookup."""
 
 import logging
-from dataclasses import dataclass
 from typing import Optional
 
 import httpx
@@ -13,43 +12,22 @@ from tenacity import (
 )
 
 from config import ODDS_API_BOOKMAKERS, ODDS_API_SPORTS
+from models import BookmakerLine, MultiBookLines
+from odds_cache import OddsCache
 
 logger = logging.getLogger(__name__)
 
 ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports"
 
 
-@dataclass(frozen=True)
-class BookmakerLine:
-    """Line data for a single bookmaker."""
-
-    bookmaker_key: str
-    bookmaker_name: str
-    spread_home: Optional[float] = None
-    spread_away: Optional[float] = None
-    total_over: Optional[float] = None
-    total_under: Optional[float] = None
-    home_moneyline: Optional[int] = None
-    away_moneyline: Optional[int] = None
-
-
-@dataclass(frozen=True)
-class MultiBookLines:
-    """Line data aggregated across multiple bookmakers."""
-
-    sport: str
-    home_team: str
-    away_team: str
-    books: dict[str, BookmakerLine]
-
-
 class OddsAPIClient:
-    """Async client for The Odds API."""
+    """Async client for The Odds API with local SQLite caching."""
 
-    def __init__(self, api_key: str, timeout: float = 10.0):
+    def __init__(self, api_key: str, timeout: float = 10.0, cache: Optional[OddsCache] = None):
         self.api_key = api_key
         self.timeout = timeout
         self._client: Optional[httpx.AsyncClient] = None
+        self._cache = cache or OddsCache()
 
     async def __aenter__(self) -> "OddsAPIClient":
         self._client = httpx.AsyncClient(timeout=httpx.Timeout(self.timeout))
@@ -132,10 +110,8 @@ class OddsAPIClient:
     ) -> Optional[MultiBookLines]:
         """Fetch closing lines from multiple sportsbooks for a specific game.
 
-        Note: The Odds API free tier provides current/upcoming odds.
-        Historical closing lines require a premium plan or caching
-        previously fetched odds. This implementation attempts a best-effort
-        lookup and gracefully degrades if data is unavailable.
+        First checks the local SQLite cache. If not found or stale, queries
+        The Odds API and stores the result for future historical lookups.
         """
         odds_sport = ODDS_API_SPORTS.get(sport)
         if not odds_sport:
@@ -187,6 +163,10 @@ class OddsAPIClient:
 
             home_team = event.get("home_team", "")
             away_team = event.get("away_team", "")
+
+            # Try cache first for freshness, but if we got API data, always update cache
+            cached = self._cache.get(sport, home_team, away_team)
+
             books: dict[str, BookmakerLine] = {}
 
             for bm in event.get("bookmakers", []):
@@ -226,17 +206,26 @@ class OddsAPIClient:
 
             if not books:
                 logger.info("No bookmaker data found for %s vs %s", team, opponent)
-                return None
+                return cached  # fallback to stale cache if any
 
-            return MultiBookLines(
+            result = MultiBookLines(
                 sport=sport,
                 home_team=home_team,
                 away_team=away_team,
                 books=books,
             )
 
-        logger.info("No odds data found for %s vs %s", team, opponent)
-        return None
+            # Save to cache for future historical lookups
+            try:
+                self._cache.save(sport, home_team, away_team, result)
+            except Exception:
+                logger.exception("Failed to save odds to cache")
+
+            return result
+
+        # No live match found — try stale cache as fallback
+        logger.info("No live odds data for %s vs %s, trying cache", team, opponent)
+        return self._cache.get(sport, team, opponent) or self._cache.get(sport, opponent, team)
 
 
 class OddsAPIError(Exception):

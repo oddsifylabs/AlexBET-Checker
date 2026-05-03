@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 # Date patterns: MM/DD/YYYY, M/D/YYYY, MM-DD-YYYY, etc.
 _DATE_PATTERN = re.compile(r"\b(\d{1,2}[/-]\d{1,2}[/-]\d{4})\b")
 
-# Spread pattern: +3.5, -7, +10, etc.
-_SPREAD_PATTERN = re.compile(r"([+-]\d+\.?\d*)")
+# Spread pattern: +3.5, -7, +1.5, -5, etc.
+_LINE_PATTERN = re.compile(r"([+-]\d+\.?\d*)")
 
 # Total pattern: O 220.5, U 215, Over 200, Under 9.5, etc.
 _TOTAL_PATTERN = re.compile(r"\b(O|U|Over|Under)\s+(\d+\.?\d*)\b", re.IGNORECASE)
@@ -34,6 +34,7 @@ class BetRequest:
     line: Optional[float] = None
     total_side: Optional[Literal["over", "under"]] = None
     opponent: Optional[str] = None
+    ml_odds: Optional[int] = None
 
 
 def _detect_sport(text: str) -> tuple[str, str]:
@@ -84,6 +85,17 @@ def _extract_teams(team_raw: str) -> tuple[str, Optional[str]]:
     return normalize_team(team_raw), None
 
 
+def _is_spread_line(value: float) -> bool:
+    """Determine if a numeric line is a spread (vs moneyline odds)."""
+    # Has decimal point -> spread (e.g., -5.5, +3.5)
+    if value != int(value):
+        return True
+    # Whole number < 100 -> spread (e.g., -7, +3, -14)
+    if abs(value) < 100:
+        return True
+    return False
+
+
 def parse_message(text: str) -> Optional[BetRequest]:
     """Extract bet details from a user message.
 
@@ -129,27 +141,44 @@ def parse_message(text: str) -> Optional[BetRequest]:
             opponent=opponent,
         )
 
-    # Check for spread pattern
-    spread_match = _SPREAD_PATTERN.search(remaining)
-    if spread_match:
-        spread_line = float(spread_match.group(1))
-        # Remove spread from remaining text
-        remaining = (
-            remaining[: spread_match.start()] + remaining[spread_match.end() :]
-        ).strip()
-        team, opponent = _extract_teams(remaining)
-        if not team:
-            return None
-        return BetRequest(
-            team=team,
-            date=date_str,
-            sport=sport,
-            bet_type="spread",
-            line=spread_line,
-            opponent=opponent,
-        )
+    # Check for line pattern (spread or moneyline odds)
+    line_match = _LINE_PATTERN.search(remaining)
+    if line_match:
+        raw_value = float(line_match.group(1))
 
-    # Default: moneyline
+        # Remove the matched value from remaining text
+        remaining_after = (
+            remaining[: line_match.start()] + remaining[line_match.end() :]
+        ).strip()
+
+        if _is_spread_line(raw_value):
+            # Spread bet
+            team, opponent = _extract_teams(remaining_after)
+            if not team:
+                return None
+            return BetRequest(
+                team=team,
+                date=date_str,
+                sport=sport,
+                bet_type="spread",
+                line=raw_value,
+                opponent=opponent,
+            )
+        else:
+            # Moneyline odds (e.g., +150, -200)
+            team, opponent = _extract_teams(remaining_after)
+            if not team:
+                return None
+            return BetRequest(
+                team=team,
+                date=date_str,
+                sport=sport,
+                bet_type="moneyline",
+                ml_odds=int(raw_value),
+                opponent=opponent,
+            )
+
+    # Default: moneyline without odds specified
     team, opponent = _extract_teams(remaining)
     if not team:
         return None

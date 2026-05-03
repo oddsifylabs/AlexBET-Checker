@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Literal, Optional
 
 from espn_client import GameResult
-from odds_client import MultiBookLines
+from models import MultiBookLines
 from parsers import BetRequest
 
 
@@ -15,6 +15,7 @@ class BookCLV:
     book_key: str
     book_name: str
     closing_line: Optional[float]
+    closing_line_display: Optional[str]
     clv_value: Optional[float]
     clv_display: Optional[str]
 
@@ -33,6 +34,18 @@ class BetResult:
     book_clvs: list[BookCLV] = None
     avg_clv_value: Optional[float] = None
     avg_clv_display: Optional[str] = None
+
+
+def _american_to_implied(odds: int) -> float:
+    """Convert American odds to implied probability (0.0 – 1.0)."""
+    if odds > 0:
+        return 100 / (odds + 100)
+    return abs(odds) / (abs(odds) + 100)
+
+
+def _format_american(odds: int) -> str:
+    """Format American odds with + sign for positive."""
+    return f"+{odds}" if odds > 0 else str(odds)
 
 
 def _get_team_spread(
@@ -69,45 +82,38 @@ def _get_team_total(
     return book.total_over
 
 
-def _calculate_clv_spread(
-    user_line: float, closing_line: Optional[float]
-) -> tuple[Optional[float], Optional[str]]:
-    """Calculate CLV for a spread bet.
+def _get_team_moneyline(
+    multi_book: MultiBookLines, book_key: str, team: str, opponent: str
+) -> Optional[int]:
+    """Get the moneyline for the specified team from a specific book."""
+    book = multi_book.books.get(book_key)
+    if not book:
+        return None
 
-    Positive CLV = you got a better line than the market close.
-    """
-    if closing_line is None:
-        return None, None
+    team_lower = team.lower()
+    home_lower = multi_book.home_team.lower()
+    away_lower = multi_book.away_team.lower()
 
-    value = round(closing_line - user_line, 2)
+    if team_lower in home_lower:
+        return book.home_moneyline
+    elif team_lower in away_lower:
+        return book.away_moneyline
+    if opponent.lower() in home_lower:
+        return book.away_moneyline
+    elif opponent.lower() in away_lower:
+        return book.home_moneyline
+    return None
+
+
+def _clv_display(value: Optional[float], suffix: str = "") -> Optional[str]:
+    """Format a CLV value with emoji."""
+    if value is None:
+        return None
     if value > 0:
-        display = f"+{value} ✓"
+        return f"+{value}{suffix} ✓"
     elif value < 0:
-        display = f"{value} ✗"
-    else:
-        display = "0.0 →"
-    return value, display
-
-
-def _calculate_clv_total(
-    user_line: float, closing_line: Optional[float], side: str
-) -> tuple[Optional[float], Optional[str]]:
-    """Calculate CLV for a total bet."""
-    if closing_line is None:
-        return None, None
-
-    if side == "over":
-        value = round(closing_line - user_line, 2)
-    else:
-        value = round(user_line - closing_line, 2)
-
-    if value > 0:
-        display = f"+{value} ✓"
-    elif value < 0:
-        display = f"{value} ✗"
-    else:
-        display = "0.0 →"
-    return value, display
+        return f"{value}{suffix} ✗"
+    return f"0.0{suffix} →"
 
 
 def evaluate_bet(
@@ -179,33 +185,49 @@ def evaluate_bet(
             clv_val = None
             clv_disp = None
             closing = None
+            closing_disp = None
 
             if bet.bet_type == "spread" and bet.line is not None:
                 closing = _get_team_spread(
                     multi_book_lines, book_key, bet.team, game.opponent
                 )
-                clv_val, clv_disp = _calculate_clv_spread(bet.line, closing)
+                if closing is not None:
+                    # CLV = user_line - closing_line
+                    clv_val = round(bet.line - closing, 2)
+                    closing_disp = f"{closing:+.1f}"
 
             elif bet.bet_type == "total" and bet.line is not None and bet.total_side:
                 closing = _get_team_total(multi_book_lines, book_key)
-                clv_val, clv_disp = _calculate_clv_total(
-                    bet.line, closing, bet.total_side
-                )
+                if closing is not None:
+                    if bet.total_side == "over":
+                        clv_val = round(closing - bet.line, 2)
+                    else:
+                        clv_val = round(bet.line - closing, 2)
+                    closing_disp = f"O/U {closing}"
 
-            elif bet.bet_type == "moneyline":
-                # Moneyline CLV requires implied probability — skip for now
-                closing = None
-                clv_val = None
-                clv_disp = None
+            elif bet.bet_type == "moneyline" and bet.ml_odds is not None:
+                closing = _get_team_moneyline(
+                    multi_book_lines, book_key, bet.team, game.opponent
+                )
+                if closing is not None:
+                    user_impl = _american_to_implied(bet.ml_odds)
+                    close_impl = _american_to_implied(closing)
+                    # CLV = closing_implied - user_implied (in percentage points)
+                    clv_val = round((close_impl - user_impl) * 100, 2)
+                    closing_disp = _format_american(closing)
 
             if clv_val is not None:
                 clv_values.append(clv_val)
+                clv_disp = _clv_display(
+                    clv_val, suffix="%" if bet.bet_type == "moneyline" else ""
+                )
 
             book_clvs.append(
                 BookCLV(
                     book_key=book_key,
                     book_name=book_line.bookmaker_name,
                     closing_line=closing,
+                    closing_line_display=closing_disp,
                     clv_value=clv_val,
                     clv_display=clv_disp,
                 )
@@ -215,12 +237,13 @@ def evaluate_bet(
     avg_disp = None
     if clv_values:
         avg_clv = round(sum(clv_values) / len(clv_values), 2)
+        suffix = "%" if bet.bet_type == "moneyline" else ""
         if avg_clv > 0:
-            avg_disp = f"+{avg_clv} ✓ (beat the close)"
+            avg_disp = f"+{avg_clv}{suffix} ✓ (beat the close)"
         elif avg_clv < 0:
-            avg_disp = f"{avg_clv} ✗ (worse than close)"
+            avg_disp = f"{avg_clv}{suffix} ✗ (worse than close)"
         else:
-            avg_disp = "0.0 → (pinned the close)"
+            avg_disp = f"0.0{suffix} → (pinned the close)"
 
     return BetResult(
         bet_request=bet,
@@ -239,10 +262,11 @@ def evaluate_bet(
 def _format_user_line(bet: BetRequest) -> str:
     """Format the user's bet line for display."""
     if bet.bet_type == "moneyline":
+        if bet.ml_odds is not None:
+            return _format_american(bet.ml_odds)
         return "ML"
     if bet.bet_type == "spread" and bet.line is not None:
-        sign = "" if bet.line < 0 else "+"
-        return f"{sign}{bet.line}"
+        return f"{bet.line:+.1f}".replace(".0", "")
     if bet.bet_type == "total" and bet.line is not None and bet.total_side:
         return f"{bet.total_side.upper()} {bet.line}"
     return "?"
