@@ -1,11 +1,22 @@
-"""Bet evaluation logic: moneyline, spread, totals, and CLV."""
+"""Bet evaluation logic: moneyline, spread, totals, and CLV across books."""
 
 from dataclasses import dataclass
 from typing import Literal, Optional
 
 from espn_client import GameResult
-from odds_client import ClosingLine
+from odds_client import MultiBookLines
 from parsers import BetRequest
+
+
+@dataclass(frozen=True)
+class BookCLV:
+    """CLV result for a single bookmaker."""
+
+    book_key: str
+    book_name: str
+    closing_line: Optional[float]
+    clv_value: Optional[float]
+    clv_display: Optional[str]
 
 
 @dataclass(frozen=True)
@@ -18,50 +29,44 @@ class BetResult:
     bet_type_display: str
     user_line_display: str
     result_detail: str
-    closing_line: Optional[ClosingLine] = None
-    clv_display: Optional[str] = None
-    clv_value: Optional[float] = None
+    multi_book_lines: Optional[MultiBookLines] = None
+    book_clvs: list[BookCLV] = None
+    avg_clv_value: Optional[float] = None
+    avg_clv_display: Optional[str] = None
 
 
-def _get_opponent_line(
-    closing_line: ClosingLine, team: str, opponent: str
+def _get_team_spread(
+    multi_book: MultiBookLines, book_key: str, team: str, opponent: str
 ) -> Optional[float]:
-    """Get the spread line for the specified team from closing line data."""
+    """Get the spread line for the specified team from a specific book."""
+    book = multi_book.books.get(book_key)
+    if not book:
+        return None
+
     team_lower = team.lower()
-    home_lower = closing_line.home_team.lower()
-    away_lower = closing_line.away_team.lower()
+    home_lower = multi_book.home_team.lower()
+    away_lower = multi_book.away_team.lower()
 
     if team_lower in home_lower:
-        return closing_line.spread_home
+        return book.spread_home
     elif team_lower in away_lower:
-        return closing_line.spread_away
-    # Fallback: try opponent matching
+        return book.spread_away
+    # Fallback via opponent
     if opponent.lower() in home_lower:
-        # Team is away
-        return closing_line.spread_away
+        return book.spread_away
     elif opponent.lower() in away_lower:
-        # Team is home
-        return closing_line.spread_home
+        return book.spread_home
     return None
 
 
-def _get_team_moneyline(
-    closing_line: ClosingLine, team: str, opponent: str
-) -> Optional[int]:
-    """Get the moneyline for the specified team from closing line data."""
-    team_lower = team.lower()
-    home_lower = closing_line.home_team.lower()
-    away_lower = closing_line.away_team.lower()
-
-    if team_lower in home_lower:
-        return closing_line.home_moneyline
-    elif team_lower in away_lower:
-        return closing_line.away_moneyline
-    if opponent.lower() in home_lower:
-        return closing_line.away_moneyline
-    elif opponent.lower() in away_lower:
-        return closing_line.home_moneyline
-    return None
+def _get_team_total(
+    multi_book: MultiBookLines, book_key: str
+) -> Optional[float]:
+    """Get the total over line from a specific book."""
+    book = multi_book.books.get(book_key)
+    if not book:
+        return None
+    return book.total_over
 
 
 def _calculate_clv_spread(
@@ -74,17 +79,13 @@ def _calculate_clv_spread(
     if closing_line is None:
         return None, None
 
-    # CLV = closing_line - user_line
-    # Example: user took -5.5, closed -7.  CLV = -7 - (-5.5) = -1.5 (bad)
-    # Example: user took +3, closed +1.5.  CLV = 1.5 - 3 = -1.5 (bad)
-    # Example: user took +3, closed +4.5.  CLV = 4.5 - 3 = +1.5 (good)
     value = round(closing_line - user_line, 2)
     if value > 0:
-        display = f"+{value} ✓ (beat the close)"
+        display = f"+{value} ✓"
     elif value < 0:
-        display = f"{value} ✗ (worse than close)"
+        display = f"{value} ✗"
     else:
-        display = "0.0 (pinned the close)"
+        display = "0.0 →"
     return value, display
 
 
@@ -95,28 +96,26 @@ def _calculate_clv_total(
     if closing_line is None:
         return None, None
 
-    # For overs: lower closing total = better for user
-    # For unders: higher closing total = better for user
     if side == "over":
         value = round(closing_line - user_line, 2)
     else:
         value = round(user_line - closing_line, 2)
 
     if value > 0:
-        display = f"+{value} ✓ (beat the close)"
+        display = f"+{value} ✓"
     elif value < 0:
-        display = f"{value} ✗ (worse than close)"
+        display = f"{value} ✗"
     else:
-        display = "0.0 (pinned the close)"
+        display = "0.0 →"
     return value, display
 
 
 def evaluate_bet(
     bet: BetRequest,
     game: GameResult,
-    closing_line: Optional[ClosingLine] = None,
+    multi_book_lines: Optional[MultiBookLines] = None,
 ) -> BetResult:
-    """Evaluate a bet against a game result and optional closing line."""
+    """Evaluate a bet against a game result and optional multi-book lines."""
 
     if not game.completed:
         return BetResult(
@@ -126,21 +125,14 @@ def evaluate_bet(
             bet_type_display=bet.bet_type.upper(),
             user_line_display=_format_user_line(bet),
             result_detail="Game is still in progress",
-            closing_line=closing_line,
+            multi_book_lines=multi_book_lines,
+            book_clvs=[],
         )
 
+    # Determine base outcome
     if bet.bet_type == "moneyline":
         outcome = "win" if game.winner else "loss"
         detail = f"{'Won' if game.winner else 'Lost'} outright"
-        clv_val, clv_disp = None, None
-        if closing_line:
-            clv_val, clv_disp = _calculate_clv_spread(
-                0.0 if game.winner else 1.0,  # placeholder — moneyline CLV needs implied prob
-                None,
-            )
-            # Moneyline CLV is complex (requires implied probability conversion).
-            # For now we skip detailed ML CLV and note it if spread CLV exists.
-            clv_val, clv_disp = None, None
 
     elif bet.bet_type == "spread":
         if bet.line is None:
@@ -159,11 +151,6 @@ def evaluate_bet(
                 outcome = "push"
                 detail = "Pushed (landed exactly on the number)"
 
-        clv_val, clv_disp = None, None
-        if closing_line and bet.line is not None:
-            cl = _get_opponent_line(closing_line, bet.team, game.opponent)
-            clv_val, clv_disp = _calculate_clv_spread(bet.line, cl)
-
     elif bet.bet_type == "total":
         if bet.line is None or bet.total_side is None:
             outcome = "pending"
@@ -179,17 +166,61 @@ def evaluate_bet(
             else:
                 outcome = "push"
                 detail = f"Pushed exactly on {bet.line} ({total})"
-
-        clv_val, clv_disp = None, None
-        if closing_line and bet.line is not None and bet.total_side is not None:
-            # Use over total as the reference line
-            cl = closing_line.total_over or closing_line.total_under
-            clv_val, clv_disp = _calculate_clv_total(bet.line, cl, bet.total_side)
-
     else:
         outcome = "pending"
         detail = "Unknown bet type"
-        clv_val, clv_disp = None, None
+
+    # Calculate CLV per bookmaker
+    book_clvs: list[BookCLV] = []
+    clv_values: list[float] = []
+
+    if multi_book_lines:
+        for book_key, book_line in multi_book_lines.books.items():
+            clv_val = None
+            clv_disp = None
+            closing = None
+
+            if bet.bet_type == "spread" and bet.line is not None:
+                closing = _get_team_spread(
+                    multi_book_lines, book_key, bet.team, game.opponent
+                )
+                clv_val, clv_disp = _calculate_clv_spread(bet.line, closing)
+
+            elif bet.bet_type == "total" and bet.line is not None and bet.total_side:
+                closing = _get_team_total(multi_book_lines, book_key)
+                clv_val, clv_disp = _calculate_clv_total(
+                    bet.line, closing, bet.total_side
+                )
+
+            elif bet.bet_type == "moneyline":
+                # Moneyline CLV requires implied probability — skip for now
+                closing = None
+                clv_val = None
+                clv_disp = None
+
+            if clv_val is not None:
+                clv_values.append(clv_val)
+
+            book_clvs.append(
+                BookCLV(
+                    book_key=book_key,
+                    book_name=book_line.bookmaker_name,
+                    closing_line=closing,
+                    clv_value=clv_val,
+                    clv_display=clv_disp,
+                )
+            )
+
+    avg_clv = None
+    avg_disp = None
+    if clv_values:
+        avg_clv = round(sum(clv_values) / len(clv_values), 2)
+        if avg_clv > 0:
+            avg_disp = f"+{avg_clv} ✓ (beat the close)"
+        elif avg_clv < 0:
+            avg_disp = f"{avg_clv} ✗ (worse than close)"
+        else:
+            avg_disp = "0.0 → (pinned the close)"
 
     return BetResult(
         bet_request=bet,
@@ -198,9 +229,10 @@ def evaluate_bet(
         bet_type_display=bet.bet_type.upper(),
         user_line_display=_format_user_line(bet),
         result_detail=detail,
-        closing_line=closing_line,
-        clv_display=clv_disp,
-        clv_value=clv_val,
+        multi_book_lines=multi_book_lines,
+        book_clvs=book_clvs,
+        avg_clv_value=avg_clv,
+        avg_clv_display=avg_disp,
     )
 
 

@@ -12,7 +12,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from config import ODDS_API_SPORTS
+from config import ODDS_API_BOOKMAKERS, ODDS_API_SPORTS
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +20,27 @@ ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports"
 
 
 @dataclass(frozen=True)
-class ClosingLine:
-    """Closing line data from The Odds API."""
+class BookmakerLine:
+    """Line data for a single bookmaker."""
 
-    sport: str
-    home_team: str
-    away_team: str
+    bookmaker_key: str
+    bookmaker_name: str
     spread_home: Optional[float] = None
     spread_away: Optional[float] = None
     total_over: Optional[float] = None
     total_under: Optional[float] = None
     home_moneyline: Optional[int] = None
     away_moneyline: Optional[int] = None
-    bookmaker: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class MultiBookLines:
+    """Line data aggregated across multiple bookmakers."""
+
+    sport: str
+    home_team: str
+    away_team: str
+    books: dict[str, BookmakerLine]
 
 
 class OddsAPIClient:
@@ -64,14 +72,65 @@ class OddsAPIClient:
         response.raise_for_status()
         return response.json()
 
-    async def fetch_closing_line(
+    @staticmethod
+    def _extract_markets(bookmaker: dict) -> dict[str, dict]:
+        """Extract markets dict from a bookmaker entry."""
+        markets = bookmaker.get("markets", [])
+        return {m["key"]: m for m in markets}
+
+    @staticmethod
+    def _parse_spread(market: dict, home_team: str, away_team: str) -> tuple[Optional[float], Optional[float]]:
+        """Parse spread market into (home_spread, away_spread)."""
+        spread_home = spread_away = None
+        for outcome in market.get("outcomes", []):
+            name_lower = outcome["name"].lower()
+            point = outcome.get("point")
+            if point is None:
+                continue
+            if name_lower in home_team.lower():
+                spread_home = float(point)
+            elif name_lower in away_team.lower():
+                spread_away = float(point)
+        return spread_home, spread_away
+
+    @staticmethod
+    def _parse_total(market: dict) -> tuple[Optional[float], Optional[float]]:
+        """Parse total market into (over_line, under_line)."""
+        total_over = total_under = None
+        for outcome in market.get("outcomes", []):
+            name_lower = outcome["name"].lower()
+            point = outcome.get("point")
+            if point is None:
+                continue
+            if name_lower == "over":
+                total_over = float(point)
+            elif name_lower == "under":
+                total_under = float(point)
+        return total_over, total_under
+
+    @staticmethod
+    def _parse_moneyline(market: dict, home_team: str, away_team: str) -> tuple[Optional[int], Optional[int]]:
+        """Parse moneyline market into (home_ml, away_ml)."""
+        home_ml = away_ml = None
+        for outcome in market.get("outcomes", []):
+            name_lower = outcome["name"].lower()
+            price = outcome.get("price")
+            if price is None:
+                continue
+            if name_lower in home_team.lower():
+                home_ml = int(price)
+            elif name_lower in away_team.lower():
+                away_ml = int(price)
+        return home_ml, away_ml
+
+    async def fetch_closing_lines(
         self,
         sport: str,
         team: str,
         opponent: str,
-        date_str: str,  # MM/DD/YYYY
-    ) -> Optional[ClosingLine]:
-        """Fetch the closing line for a specific game.
+        date_str: str,  # MM/DD/YYYY — unused for now, kept for API consistency
+    ) -> Optional[MultiBookLines]:
+        """Fetch closing lines from multiple sportsbooks for a specific game.
 
         Note: The Odds API free tier provides current/upcoming odds.
         Historical closing lines require a premium plan or caching
@@ -89,6 +148,7 @@ class OddsAPIClient:
             "regions": "us",
             "markets": "h2h,spreads,totals",
             "oddsFormat": "american",
+            "bookmakers": ",".join(ODDS_API_BOOKMAKERS),
         }
 
         try:
@@ -125,49 +185,54 @@ class OddsAPIClient:
             if not match:
                 continue
 
-            # Extract lines from the first bookmaker
-            bookmakers = event.get("bookmakers", [])
-            if not bookmakers:
-                continue
+            home_team = event.get("home_team", "")
+            away_team = event.get("away_team", "")
+            books: dict[str, BookmakerLine] = {}
 
-            bm = bookmakers[0]
-            markets = {m["key"]: m for m in bm.get("markets", [])}
+            for bm in event.get("bookmakers", []):
+                bm_key = bm.get("key", "").lower()
+                bm_title = bm.get("title", bm_key)
+                if not bm_key:
+                    continue
 
-            spread_home = spread_away = None
-            if "spreads" in markets:
-                for outcome in markets["spreads"].get("outcomes", []):
-                    if outcome["name"].lower() in home:
-                        spread_home = float(outcome.get("point", 0))
-                    elif outcome["name"].lower() in away:
-                        spread_away = float(outcome.get("point", 0))
+                markets = self._extract_markets(bm)
 
-            total_over = total_under = None
-            if "totals" in markets:
-                for outcome in markets["totals"].get("outcomes", []):
-                    if outcome["name"].lower() == "over":
-                        total_over = float(outcome.get("point", 0))
-                    elif outcome["name"].lower() == "under":
-                        total_under = float(outcome.get("point", 0))
+                spread_home = spread_away = None
+                if "spreads" in markets:
+                    spread_home, spread_away = self._parse_spread(
+                        markets["spreads"], home_team, away_team
+                    )
 
-            home_ml = away_ml = None
-            if "h2h" in markets:
-                for outcome in markets["h2h"].get("outcomes", []):
-                    if outcome["name"].lower() in home:
-                        home_ml = int(outcome.get("price", 0))
-                    elif outcome["name"].lower() in away:
-                        away_ml = int(outcome.get("price", 0))
+                total_over = total_under = None
+                if "totals" in markets:
+                    total_over, total_under = self._parse_total(markets["totals"])
 
-            return ClosingLine(
+                home_ml = away_ml = None
+                if "h2h" in markets:
+                    home_ml, away_ml = self._parse_moneyline(
+                        markets["h2h"], home_team, away_team
+                    )
+
+                books[bm_key] = BookmakerLine(
+                    bookmaker_key=bm_key,
+                    bookmaker_name=bm_title,
+                    spread_home=spread_home,
+                    spread_away=spread_away,
+                    total_over=total_over,
+                    total_under=total_under,
+                    home_moneyline=home_ml,
+                    away_moneyline=away_ml,
+                )
+
+            if not books:
+                logger.info("No bookmaker data found for %s vs %s", team, opponent)
+                return None
+
+            return MultiBookLines(
                 sport=sport,
-                home_team=event.get("home_team", ""),
-                away_team=event.get("away_team", ""),
-                spread_home=spread_home,
-                spread_away=spread_away,
-                total_over=total_over,
-                total_under=total_under,
-                home_moneyline=home_ml,
-                away_moneyline=away_ml,
-                bookmaker=bm.get("title"),
+                home_team=home_team,
+                away_team=away_team,
+                books=books,
             )
 
         logger.info("No odds data found for %s vs %s", team, opponent)

@@ -8,7 +8,7 @@ from typing import Optional
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import Config
+from config import Config, BOOKMAKER_NAMES
 from espn_client import ESPNClient, ESPNError
 from evaluator import evaluate_bet
 from odds_client import OddsAPIClient
@@ -82,9 +82,27 @@ def _format_bet_result(bet_result, date_str: str) -> str:
 
     if game.completed:
         lines.append(f"Detail: {bet_result.result_detail}")
-        if bet_result.clv_display:
-            lines.append(f"CLV: {bet_result.clv_display}")
-        elif bet_result.closing_line is None:
+
+        # CLV section
+        if bet_result.book_clvs:
+            clv_lines = []
+            for bc in bet_result.book_clvs:
+                if bc.closing_line is not None and bc.clv_display is not None:
+                    name = BOOKMAKER_NAMES.get(bc.book_key, bc.book_name)
+                    clv_lines.append(
+                        f"{name}: {bc.closing_line} ({bc.clv_display})"
+                    )
+
+            if clv_lines:
+                lines.append("")
+                lines.append("📊 CLV by Book:")
+                lines.extend(clv_lines)
+
+                if bet_result.avg_clv_display:
+                    lines.append(f"Avg CLV: {bet_result.avg_clv_display}")
+        elif req.bet_type == "moneyline":
+            lines.append("CLV: Moneyline CLV not yet supported")
+        else:
             lines.append("CLV: No closing line data available")
 
     return "\n".join(lines)
@@ -108,7 +126,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "• Lakers O 220.5 5/1/2026\n"
         "• NFL Chiefs vs Ravens U 47.5 9/10/2026\n\n"
         "Sports: NBA, NFL, MLB, NHL, NCAAF, NCAAB\n"
-        "I also check CLV when odds data is available."
+        "CLV checked across: DK, FD, MGM, Caesars, PB, Bovada, Barstool, Wynn, Rivers"
     )
     await update.message.reply_text(welcome_text, parse_mode="Markdown")
 
@@ -184,12 +202,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return
 
-    # Fetch closing line for CLV (best effort)
-    closing_line = None
+    # Fetch closing lines for CLV (best effort)
+    multi_book_lines = None
     if config.odds_api_key:
         try:
             async with OddsAPIClient(api_key=config.odds_api_key, timeout=config.espn_timeout) as odds_client:
-                closing_line = await odds_client.fetch_closing_line(
+                multi_book_lines = await odds_client.fetch_closing_lines(
                     sport=bet.sport,
                     team=bet.team,
                     opponent=game.opponent,
@@ -200,7 +218,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             # Non-fatal — continue without CLV
 
     # Evaluate bet
-    bet_result = evaluate_bet(bet, game, closing_line)
+    bet_result = evaluate_bet(bet, game, multi_book_lines)
     msg = _format_bet_result(bet_result, bet.date)
     await update.message.reply_text(msg)
 

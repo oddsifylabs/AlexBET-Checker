@@ -52,6 +52,33 @@ ODDS_API_SPORTS: Final[dict[str, str]] = {
     "ncaab": "basketball_ncaab",
 }
 
+# Bookmakers to query for CLV (in priority order)
+# The Odds API keys: https://the-odds-api.com/sports-odds-data/bookmaker-apis.html
+ODDS_API_BOOKMAKERS: Final[list[str]] = [
+    "draftkings",
+    "fanduel",
+    "betmgm",
+    "williamhill_us",  # Caesars
+    "pointsbetus",
+    "bovada",
+    "barstool",
+    "wynnbet",
+    "betrivers",
+]
+
+# Friendly display names for bookmaker keys
+BOOKMAKER_NAMES: Final[dict[str, str]] = {
+    "draftkings": "DK",
+    "fanduel": "FD",
+    "betmgm": "MGM",
+    "williamhill_us": "Caesars",
+    "pointsbetus": "PB",
+    "bovada": "Bovada",
+    "barstool": "Barstool",
+    "wynnbet": "Wynn",
+    "betrivers": "Rivers",
+}
+
 # Sport aliases for detection
 SPORT_ALIASES: Final[dict[str, str]] = {
     "nba": "nba",
