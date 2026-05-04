@@ -44,7 +44,7 @@ def _is_rate_limited(user_id: int, max_requests: int, window_seconds: float = 60
 
 
 def _format_bet_result(bet_result, date_str: str) -> str:
-    """Format a BetResult into a user-friendly message."""
+    """Format a BetResult into a clean, actionable card."""
     req = bet_result.bet_request
     game = bet_result.game_result
 
@@ -79,21 +79,18 @@ def _format_bet_result(bet_result, date_str: str) -> str:
     sport_emoji = sport_emojis.get(req.sport, "🏆")
 
     lines = [
-        f"{sport_emoji} Bet Result",
-        "",
-        f"{game.team} vs {game.opponent}",
+        f"{sport_emoji} *BET RESULT — {req.sport.upper()} {bet_result.bet_type_display.upper()}*",
+        f"━━━━━━━━━━━━━━━",
+        f"",
+        f"*{req.team} {bet_result.user_line_display} vs {game.opponent}*",
         f"Date: {date_str}",
-        f"Status: {status}",
-        "",
-        f"Score:",
-        f"{game.team}: {game.team_score}",
-        f"{game.opponent}: {game.opponent_score}",
-        "",
-        f"Bet: {bet_result.bet_type_display} {bet_result.user_line_display}",
+        f"",
         f"Result: {outcome_emoji}",
     ]
 
     if game.completed:
+        lines.append(f"Final: {game.team} {game.team_score} — {game.opponent} {game.opponent_score}")
+        lines.append(f"")
         lines.append(f"Detail: {bet_result.result_detail}")
 
         # CLV section
@@ -108,16 +105,22 @@ def _format_bet_result(bet_result, date_str: str) -> str:
 
             if clv_lines:
                 lines.append("")
-                lines.append("📊 CLV by Book:")
+                lines.append("📊 *CLV by Book:*")
                 lines.extend(clv_lines)
 
                 if bet_result.avg_clv_display:
                     lines.append(f"Avg CLV: {bet_result.avg_clv_display}")
         else:
             if req.bet_type == "moneyline" and req.ml_odds is None:
-                lines.append("CLV: Add odds (e.g., Lakers +150) to see CLV")
+                lines.append("")
+                lines.append("📊 CLV: Add odds (e.g., Lakers +150) to see CLV")
             else:
-                lines.append("CLV: No closing line data available")
+                lines.append("")
+                lines.append("📊 CLV: No closing line data available")
+    else:
+        lines.append(f"Status: {status}")
+        lines.append(f"")
+        lines.append(f"Score: {game.team} {game.team_score} — {game.opponent} {game.opponent_score}")
 
     return "\n".join(lines)
 
